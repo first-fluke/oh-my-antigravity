@@ -21,6 +21,8 @@ description: Guide for coordinating PM, Frontend, Backend, Mobile, and QA agents
 3. Define API contracts before frontend/mobile tasks
 4. QA review is always the final step
 5. Assign separate workspaces to avoid file conflicts
+6. Always use Serena MCP tools as the primary method for code exploration and modification
+7. Never skip steps in the workflow — follow each step sequentially without omission
 
 ## Workflow
 

@@ -2,24 +2,68 @@
 description: PM planning workflow — analyze requirements, select tech stack, decompose into prioritized tasks with dependencies, and define API contracts
 ---
 
-1. Gather Requirements
-   Ask the user to describe what they want to build. Clarify: target users, core features (must-have vs nice-to-have), constraints (tech stack, timeline, existing codebase), and deployment target (web, mobile, both).
+# MANDATORY RULES — VIOLATION IS FORBIDDEN
 
-2. Analyze Technical Feasibility
-   // turbo
-   If an existing codebase exists, scan the project structure, tech stack, and architecture patterns. Identify what can be reused and what needs to be built from scratch.
+- **All responses MUST be written in Korean (한국어).** Do NOT respond in English.
+- **NEVER skip steps.** Execute from Step 1 in order.
+- **You MUST use Serena MCP tools throughout the workflow.**
+  - Use `get_symbols_overview`, `find_symbol`, `search_for_pattern` to analyze the existing codebase.
+  - Use `write_memory`, `edit_memory` to record planning results in `.serena/memories/`.
+  - Do NOT use raw file reads or grep as substitutes.
 
-3. Define API Contracts
-   // turbo
-   Design the API contracts between frontend/mobile and backend. For each endpoint: method, path, request/response schemas, auth requirements, error responses. Save to `.agent/skills/_shared/api-contracts/`.
+---
 
-4. Decompose into Tasks
-   // turbo
-   Break down the project into actionable tasks. Each task must have: assigned agent (frontend/backend/mobile/qa/debug), title, acceptance criteria, priority (P0-P3), and dependencies.
+## Step 1: Gather Requirements
 
-5. Review Plan with User
-   Present the full plan: task list, priority tiers, dependency graph, and estimated agent assignments. Ask the user to confirm or adjust before execution.
+Ask the user to describe what they want to build. Clarify:
+- Target users
+- Core features (must-have vs nice-to-have)
+- Constraints (tech stack, existing codebase)
+- Deployment target (web, mobile, both)
 
-6. Save Plan
-   // turbo
-   Save the approved plan to `.agent/plan.json` and `.gemini/antigravity/brain/current-plan.md`. The plan is now ready for `/coordinate` or `/orchestrate` to execute.
+---
+
+## Step 2: Analyze Technical Feasibility
+
+// turbo
+If an existing codebase exists, use Serena MCP tools to scan:
+- `get_symbols_overview` for project structure and architecture patterns.
+- `find_symbol` and `search_for_pattern` to identify reusable code and what needs to be built.
+
+---
+
+## Step 3: Define API Contracts
+
+// turbo
+Design API contracts between frontend/mobile and backend. Per endpoint:
+- Method, path, request/response schemas
+- Auth requirements, error responses
+- Save to `.agent/skills/_shared/api-contracts/`.
+
+---
+
+## Step 4: Decompose into Tasks
+
+// turbo
+Break down the project into actionable tasks. Each task must have:
+- Assigned agent (frontend/backend/mobile/qa/debug)
+- Title, acceptance criteria
+- Priority (P0-P3), dependencies
+
+---
+
+## Step 5: Review Plan with User
+
+Present the full plan: task list, priority tiers, dependency graph, agent assignments.
+**You MUST get user confirmation before proceeding to Step 6.**
+
+---
+
+## Step 6: Save Plan
+
+// turbo
+Save the approved plan:
+1. `.agent/plan.json`
+2. Use `write_memory` to record plan summary in Serena Memory.
+
+The plan is now ready for `/coordinate` or `/orchestrate` to execute.

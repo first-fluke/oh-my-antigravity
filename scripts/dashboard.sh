@@ -112,7 +112,7 @@ get_latest_activity() {
     [[ $count -ge 4 ]] && break
   done
 
-  printf '%s\n' "${lines[@]}"
+  [[ ${#lines[@]} -gt 0 ]] && printf '%s\n' "${lines[@]}"
 }
 
 status_symbol() {
