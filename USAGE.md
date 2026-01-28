@@ -2,450 +2,240 @@
 
 ## Quick Start
 
-1. **Open this project in Antigravity IDE**
+1. **Open in Antigravity IDE**
    ```bash
    antigravity open /path/to/subagent-orchestrator
    ```
 
-2. **Skills are automatically detected!**
-   Antigravity will scan `.agent/skills/` and index all available skills.
+2. **Skills are automatically detected.** Antigravity scans `.agent/skills/` and indexes all available skills.
 
-3. **Start chatting in the Antigravity IDE**
-   Just describe what you want to build in the chat panel.
+3. **Chat in the IDE.** Describe what you want to build.
+
+---
 
 ## Usage Examples
 
 ### Example 1: Simple Single-Domain Task
 
-**You type in Antigravity chat:**
+**You type:**
 ```
 "Create a login form component with email and password fields using Tailwind CSS"
 ```
 
 **What happens:**
-- Antigravity's Progressive Disclosure automatically detects this matches `frontend-agent`
-- The frontend-agent skill is loaded
-- You get a React component with TypeScript, Tailwind, form validation, etc.
-
-**No need to manually select a skill** - it happens automatically!
-
----
+- Antigravity detects this matches `frontend-agent`
+- The skill loads automatically (Progressive Disclosure)
+- You get a React component with TypeScript, Tailwind, form validation
 
 ### Example 2: Complex Multi-Domain Project
 
-**You type in Antigravity chat:**
+**You type:**
 ```
 "Build a TODO app with user authentication"
 ```
 
 **What happens:**
 
-#### Step 1: Workflow Guide Activated
-- Antigravity detects this is complex (mentions auth + todo + app)
-- The `workflow-guide` skill is loaded
-- You're guided through the multi-agent process
+1. **Workflow Guide activates** — detects multi-domain complexity
+2. **PM Agent plans** — creates task breakdown with priorities
+3. **You spawn agents** in Agent Manager UI:
+   - Backend Agent: JWT authentication API
+   - Frontend Agent: Login and TODO UI
+4. **Agents work in parallel** — save outputs to Knowledge Base
+5. **You coordinate** — review `.gemini/antigravity/brain/` for consistency
+6. **QA Agent reviews** — security/performance audit
+7. **Fix & iterate** — re-spawn agents with corrections
 
-#### Step 2: PM Agent Plans
-The workflow guide will say:
-> "Let me consult the PM Agent to break this down..."
+### Example 3: Bug Fixing
 
-The PM Agent skill is automatically loaded and creates a plan with tasks.
+**You type:**
+```
+"There's a bug — clicking login shows 'Cannot read property map of undefined'"
+```
 
-#### Step 3: You Use Agent Manager UI
-The workflow guide will tell you:
-> "Based on this plan, I recommend spawning the following agents in Antigravity's Agent Manager:
->
-> **Priority 1 (Run in Parallel)**:
-> - Backend Agent: Implement JWT authentication API...
-> - Frontend Agent: Build login and registration UI...
->
-> **How to spawn:**
-> 1. Open Agent Manager panel
-> 2. Click 'New Agent'
-> 3. Select 'backend-agent' skill
-> 4. Paste this task description: [detailed instructions]"
+**What happens:**
 
-#### Step 4: You Spawn Agents in UI
-- Open **Agent Manager** (Mission Control dashboard in Antigravity IDE)
-- Click **"New Agent"** button
-- Select skill: `backend-agent`
-- Paste the task description provided
-- Click **"Spawn"**
+1. **debug-agent activates** — analyzes error
+2. **Root cause found** — component maps over `todos` before data loads
+3. **Fix provided** — loading states and null checks added
+4. **Regression test written** — ensures bug won't return
+5. **Similar patterns found** — proactively fixes 3 other components
 
-Repeat for frontend-agent, mobile-agent, etc.
+### Example 4: CLI-based Parallel Execution
 
-#### Step 5: Monitor in Inbox
-- Agents work independently
-- They ping you in the **Agent Manager Inbox** when done or need input
-- You review their outputs in `.gemini/antigravity/brain/`
+```bash
+# Single agent
+./scripts/spawn-subagent.sh backend "Implement JWT auth API" ./backend
 
-#### Step 6: QA Review
-- Spawn the `qa-agent` to review everything
-- Get a comprehensive security/performance report
-- Fix critical issues by re-spawning agents with corrections
+# Parallel agents
+./scripts/spawn-subagent.sh backend "Implement auth API" ./backend &
+./scripts/spawn-subagent.sh frontend "Create login form" ./frontend &
+./scripts/spawn-subagent.sh mobile "Build auth screens" ./mobile &
+wait
+```
+
+**Monitor in real-time:**
+```bash
+# Terminal (separate terminal window)
+npm run dashboard
+
+# Or browser
+npm run dashboard:web
+# → http://localhost:9847
+```
+
+---
+
+## Real-time Dashboards
+
+### Terminal Dashboard
+
+```bash
+npm run dashboard
+```
+
+Watches `.serena/memories/` using `fswatch` (macOS) or `inotifywait` (Linux). Displays a live table with session status, agent states, turns, and latest activity. Updates automatically when memory files change.
+
+**Requirements:**
+- macOS: `brew install fswatch`
+- Linux: `apt install inotify-tools`
+
+### Web Dashboard
+
+```bash
+npm install          # first time only
+npm run dashboard:web
+```
+
+Open `http://localhost:9847` in your browser. Features:
+
+- **Real-time updates** via WebSocket (event-driven, not polling)
+- **Auto-reconnect** if the connection drops
+- **Serena-themed UI** with purple accent colors
+- **Session status** — ID and running/completed/failed state
+- **Agent table** — name, status (with colored dots), turn count, task description
+- **Activity log** — latest changes from progress and result files
+
+The server watches `.serena/memories/` using chokidar with debounce (100ms). Only changed files trigger reads — no full re-scan.
 
 ---
 
 ## Key Concepts
 
-### 1. Progressive Disclosure
-**You don't manually select skills.**
+### Progressive Disclosure
+Antigravity automatically matches requests to skills. You never manually select a skill. Only the needed skill loads into context.
 
-Antigravity automatically:
-- Scans your request
-- Matches it against skill descriptions
-- Loads the relevant skill into context
-- Only loads the full skill when needed (saves tokens)
+### Agent Manager UI
+Mission Control dashboard in Antigravity IDE. Spawn agents, assign workspaces, monitor via inbox, review artifacts.
 
-### 2. Agent Manager UI
-**This is the Mission Control dashboard in Antigravity IDE.**
+### Knowledge Base
+Agent outputs stored at `.gemini/antigravity/brain/`. Contains plans, code, reports, and coordination notes.
 
-Features:
-- Spawn multiple agents working on different tasks
-- Each agent can have its own workspace
-- Monitor progress via inbox notifications
-- Pause, resume, or terminate agents
-- Review artifacts generated by agents
+### Serena Memory
+Structured runtime state at `.serena/memories/`. The orchestrator writes session info, task boards, per-agent progress, and results. Dashboards watch these files for monitoring.
 
-### 3. Knowledge Base
-**Automatic storage of all agent outputs.**
-
-Located at: `.gemini/antigravity/brain/`
-
-Contains:
-- Plans from PM Agent
-- Code from Frontend/Backend/Mobile Agents
-- Reports from QA Agent
-- Your coordination notes
-
-### 4. Workspaces
-**Agents can work in separate directories to avoid conflicts.**
-
-Example:
+### Workspaces
+Agents can work in separate directories to avoid conflicts:
 ```
 ./backend    → Backend Agent workspace
 ./frontend   → Frontend Agent workspace
 ./mobile     → Mobile Agent workspace
 ```
 
-Set workspace when spawning an agent in Agent Manager.
-
 ---
 
 ## Available Skills
 
-### workflow-guide
-**Auto-activates for**: Complex multi-domain projects
-
-**What it does**: Guides you through coordinating multiple agents using Agent Manager
-
-**When to expect it**: When you ask for full-stack apps, mobile apps, or complex features
-
----
-
-### pm-agent
-**Auto-activates for**: "plan this", "break down the project", "what should we build"
-
-**What it does**:
-- Analyzes requirements
-- Chooses tech stack
-- Creates task breakdown with priorities/dependencies
-- Generates JSON Plan Artifact
-
-**Output**: `.agent/plan.json` and `.gemini/antigravity/brain/current-plan.md`
-
----
-
-### frontend-agent
-**Auto-activates for**: UI, components, styling, client-side logic
-
-**Tech Stack**: Next.js 14, TypeScript, Tailwind CSS, shadcn/ui
-
-**What it does**:
-- Builds React components
-- Implements responsive design
-- Writes unit tests (Vitest)
-- Creates Storybook stories
-
-**Output**: Components, tests, documentation
-
----
-
-### backend-agent
-**Auto-activates for**: APIs, databases, authentication, server logic
-
-**Tech Stack**: FastAPI, SQLAlchemy, PostgreSQL, Redis
-
-**What it does**:
-- Implements REST APIs
-- Designs database schema
-- Handles auth (JWT, bcrypt)
-- Writes integration tests
-
-**Output**: API endpoints, models, tests, OpenAPI spec
-
----
-
-### mobile-agent
-**Auto-activates for**: Mobile apps, iOS/Android, cross-platform
-
-**Tech Stack**: Flutter, Dart, Riverpod
-
-**What it does**:
-- Builds mobile screens
-- Implements navigation
-- Handles platform-specific features
-- Writes widget tests
-
-**Output**: Flutter screens, state management, platform code
-
----
-
-### qa-agent
-**Auto-activates for**: "review security", "check performance", "audit this"
-
-**What it does**:
-- Security audit (OWASP Top 10)
-- Performance analysis (Lighthouse, API latency)
-- Accessibility check (WCAG 2.1 AA)
-- Code quality review
-
-**Output**: Comprehensive QA report with prioritized fixes
-
----
-
-### debug-agent
-**Auto-activates for**: Bug reports, error messages, crashes, unexpected behavior
-
-**What it does**:
-- Analyzes error messages and stack traces
-- Reproduces bugs systematically
-- Identifies root causes (not just symptoms)
-- Provides fixes with explanations
-- Writes regression tests
-- Documents bugs in Knowledge Base
-- Proactively finds similar patterns
-
-**Output**: Fixed code, regression tests, bug documentation
-
-**Handles**:
-- Frontend bugs (null errors, race conditions, memory leaks)
-- Backend bugs (SQL injection, N+1 queries, auth issues)
-- Mobile bugs (platform-specific, memory leaks)
-- Performance bugs (slow renders, large bundles)
-- Security bugs (XSS, CSRF, injection attacks)
+| Skill | Auto-activates for | Output |
+|-------|-------------------|--------|
+| workflow-guide | Complex multi-domain projects | Step-by-step agent coordination |
+| pm-agent | "plan this", "break down" | `.agent/plan.json` |
+| frontend-agent | UI, components, styling | React components, tests |
+| backend-agent | APIs, databases, auth | API endpoints, models, tests |
+| mobile-agent | Mobile apps, iOS/Android | Flutter screens, state management |
+| qa-agent | "review security", "audit" | QA report with prioritized fixes |
+| debug-agent | Bug reports, error messages | Fixed code, regression tests |
+| orchestrator | CLI sub-agent execution | Results in `.agent/results/` |
 
 ---
 
 ## Typical Workflows
 
-### Workflow A: Single Skill (Simple Task)
+### Workflow A: Single Skill
 
 ```
-You: "Create a button component with hover effects"
-     ↓
-Antigravity: [Loads frontend-agent]
-     ↓
-Frontend Agent: [Creates component with Tailwind styles]
-     ↓
-You: Get the code immediately
+You: "Create a button component"
+  → Antigravity loads frontend-agent
+  → Get component immediately
 ```
 
-**Time**: < 1 minute
-**Skills used**: 1 (frontend-agent)
-
----
-
-### Workflow B: Multi-Skill (Complex Project)
+### Workflow B: Multi-Agent Project
 
 ```
 You: "Build a TODO app with authentication"
-     ↓
-Antigravity: [Loads workflow-guide]
-     ↓
-Workflow Guide: "Let me consult PM Agent..."
-     ↓
-PM Agent: [Creates plan with 5 tasks]
-     ↓
-Workflow Guide: "Spawn these agents in Agent Manager:
-                 1. Backend Agent (auth API)
-                 2. Frontend Agent (login UI)
-                 ..."
-     ↓
-You: Open Agent Manager, spawn agents manually
-     ↓
-Agents: Work in parallel, save to Knowledge Base
-     ↓
-You: Review outputs, coordinate integration
-     ↓
-Workflow Guide: "Now spawn QA Agent..."
-     ↓
-QA Agent: [Generates security/performance report]
-     ↓
-You: Fix critical issues, re-spawn agents as needed
-     ↓
-Done: Complete, tested application
+  → workflow-guide activates
+  → PM Agent creates plan
+  → You spawn agents in Agent Manager
+  → Agents work in parallel
+  → QA Agent reviews
+  → Fix issues, iterate
 ```
 
-**Time**: 30-60 minutes (depending on complexity)
-**Skills used**: 5 (workflow-guide, pm-agent, backend-agent, frontend-agent, qa-agent)
+### Workflow C: Bug Fixing
+
+```
+You: "Login button throws TypeError"
+  → debug-agent activates
+  → Root cause analysis
+  → Fix + regression test
+  → Similar patterns checked
+```
+
+### Workflow D: CLI Orchestration with Dashboard
+
+```
+Terminal 1: npm run dashboard:web
+Terminal 2: ./scripts/spawn-subagent.sh backend "task" ./backend &
+            ./scripts/spawn-subagent.sh frontend "task" ./frontend &
+Browser:    http://localhost:9847 → real-time status
+```
 
 ---
 
-### Workflow C: Bug Fixing (Debug Agent)
+## Tips
 
-```
-You: "There's a bug - clicking login button shows 'Cannot read property map of undefined'"
-     ↓
-Antigravity: [Loads debug-agent]
-     ↓
-Debug Agent: "Let me investigate this error..."
-     ↓
-Debug Agent: [Analyzes TodoList.tsx, finds null check missing]
-     ↓
-Debug Agent: "Root cause: Component tries to map over 'todos' before data loads"
-     ↓
-Debug Agent: [Provides fix with loading/error/empty states]
-     ↓
-Debug Agent: [Writes regression test]
-     ↓
-Debug Agent: [Searches for similar patterns]
-     ↓
-Debug Agent: "Found 3 other components with same issue - fixed proactively"
-     ↓
-Done: Bug fixed, tested, documented
-```
-
-**Time**: 10-30 minutes
-**Skills used**: 1 (debug-agent)
-
-**Common scenarios**:
-- **Simple bugs**: TypeError, missing null checks → debug-agent fixes directly
-- **Complex bugs**: Multi-domain issues → debug-agent diagnoses, then workflow-guide coordinates fixes
-- **Security bugs**: Injection vulnerabilities → debug-agent identifies, qa-agent provides comprehensive audit
-
----
-
-## Tips for Best Results
-
-### 1. Be Specific in Requests
-
-❌ "Make an app"
-✅ "Build a TODO app with user authentication using JWT, React frontend, and FastAPI backend"
-
-### 2. Use Agent Manager for Complex Projects
-
-For projects needing multiple domains:
-1. Let PM Agent plan first
-2. Spawn agents in Agent Manager (don't try to do everything in one chat)
-3. Review each agent's output
-4. Coordinate integration
-
-### 3. Review Knowledge Base
-
-Check `.gemini/antigravity/brain/` regularly:
-- Ensure APIs match between frontend/backend
-- Verify data models are consistent
-- Review QA findings
-
-### 4. Iterate with Re-spawns
-
-If an agent's output isn't perfect:
-- Don't start over!
-- Re-spawn the same agent with refined instructions
-- Reference previous output: "Based on your earlier API design, now add rate limiting..."
-
-### 5. Use Separate Workspaces
-
-Avoid conflicts by assigning each agent its own workspace in Agent Manager.
+1. **Be specific** — "Build a TODO app with JWT auth, React frontend, FastAPI backend" is better than "make an app"
+2. **Use Agent Manager** for multi-domain projects — don't try to do everything in one chat
+3. **Review Knowledge Base** — check `.gemini/antigravity/brain/` for API consistency
+4. **Iterate with re-spawns** — refine instructions, don't start over
+5. **Use dashboards** — `npm run dashboard` or `npm run dashboard:web` to monitor orchestrator sessions
+6. **Separate workspaces** — assign each agent its own directory
 
 ---
 
 ## Troubleshooting
 
-### Skills Not Loading
-
-**Problem**: Antigravity doesn't seem to find the skills
-
-**Solution**:
-1. Ensure you opened the project in Antigravity: `antigravity open .`
-2. Check that `.agent/skills/` folder exists
-3. Verify each skill has a `SKILL.md` file
-4. Restart Antigravity IDE
-
-### Agent Manager Not Showing
-
-**Problem**: Can't find Agent Manager UI
-
-**Solution**:
-1. Look for "Mission Control" or "Agent Manager" panel in Antigravity IDE
-2. Try View → Agent Manager in the menu
-3. Ensure you're using Antigravity 2026+ (Agent Manager was added in 2026)
-
-### Agents Not Coordinating
-
-**Problem**: Frontend and Backend producing incompatible code
-
-**Solution**:
-1. Review both outputs in Knowledge Base
-2. Identify the mismatch (e.g., API endpoint path differs)
-3. Re-spawn one agent with corrected specification
-4. Reference the other agent's output: "The Backend Agent created POST /api/auth/login, make sure your frontend calls that exact path"
-
-### QA Agent Finding Too Many Issues
-
-**Problem**: QA report has 50+ issues
-
-**Solution**:
-- Focus on CRITICAL and HIGH first
-- Some MEDIUM/LOW items may be overly cautious
-- Prioritize security > performance > code quality
-- Address top 5-10 issues, document the rest for later
+| Problem | Solution |
+|---------|----------|
+| Skills not loading | `antigravity open .`, check `.agent/skills/`, restart IDE |
+| Agent Manager not found | View → Agent Manager menu, requires Antigravity 2026+ |
+| Incompatible agent outputs | Review both in Knowledge Base, re-spawn with corrections |
+| Dashboard: "No agents" | Memory files not created yet, run orchestrator first |
+| Web dashboard won't start | Run `npm install` to install chokidar and ws |
+| fswatch not found | macOS: `brew install fswatch`, Linux: `apt install inotify-tools` |
+| QA report has 50+ issues | Focus on CRITICAL/HIGH first, document rest for later |
 
 ---
 
-## Quota Usage
+## npm Scripts
 
-### Antigravity Free Tier
-- Limited Gemini API calls per month
-- Skills are designed to be efficient (Progressive Disclosure only loads what's needed)
-
-### Antigravity Paid Tier
-- Higher quota
-- Use complex multi-agent workflows within your monthly quota
-- Each agent spawn uses tokens, so plan accordingly
-
-**Optimization Tips**:
-- Use specific requests to avoid unnecessary skill loading
-- Don't spawn agents unnecessarily (follow PM Agent's plan)
-- Review outputs before re-spawning (avoid repeated work)
+```bash
+npm run dashboard       # Terminal real-time dashboard
+npm run dashboard:web   # Web dashboard → http://localhost:9847
+npm run validate        # Validate skill files
+npm run info            # Show this usage guide
+```
 
 ---
 
-## Learn More
-
-**Official Resources**:
-- [Antigravity Documentation](https://antigravity.google/docs/skills)
-- [Antigravity Skills Codelab](https://codelabs.developers.google.com/getting-started-with-antigravity-skills)
-- [Agent Manager Guide](https://antigravity.google/docs/agent-manager)
-
-**This Project**:
-- `README.md` - Full project overview
-- `.agent/skills/*/SKILL.md` - Individual skill documentation
-- `.agent/skills/*/resources/` - Templates and examples
-
----
-
-## Quick Reference
-
-**To use these skills**: Just chat in Antigravity IDE!
-
-**Single task**: Describe what you want, get immediate results
-
-**Complex project**: Follow the workflow guide's instructions to spawn agents in Agent Manager
-
-**Review work**: Check `.gemini/antigravity/brain/` for all agent outputs
-
-**Fix issues**: Re-spawn relevant agent with corrections
-
-**That's it!** No terminal commands, no npm scripts - just chat and coordinate via Agent Manager UI.
+**Just chat in Antigravity IDE.** For monitoring, use the dashboards. For CLI execution, use the orchestrator scripts.
