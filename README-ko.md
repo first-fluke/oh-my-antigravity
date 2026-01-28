@@ -70,6 +70,12 @@ antigravity open .
 → workflow-guide → PM Agent 기획 → Agent Manager에서 에이전트 생성
 ```
 
+**명시적 조율** (유저가 워크플로우 호출):
+```
+/coordinate
+→ 단계별: PM 기획 → 에이전트 생성 → QA 검토
+```
+
 ### 3. 대시보드로 모니터링
 
 ```bash
@@ -180,6 +186,8 @@ npm run dashboard:web
 ```
 .
 ├── .agent/
+│   ├── workflows/
+│   │   └── coordinate.md           # /coordinate 명령어 (멀티 에이전트 조율)
 │   └── skills/
 │       ├── _shared/                    # 공통 리소스 (스킬 아님)
 │       │   ├── serena-memory-protocol.md

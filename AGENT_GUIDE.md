@@ -60,9 +60,18 @@ cd /path/to/user-project
 mkdir -p .agent/skills
 ```
 
-Copy shared resources and each skill individually (this prevents overwriting):
+Copy workflows, shared resources, and each skill individually (this prevents overwriting):
 ```bash
 REPO="/tmp/subagent-orchestrator"  # temp clone location
+
+# Copy workflows (user-triggered /commands)
+mkdir -p .agent/workflows
+if [ -d ".agent/workflows" ] && [ "$(ls -A .agent/workflows 2>/dev/null)" ]; then
+  echo "⚠️  workflows/ already has files. Keeping existing."
+else
+  cp -r "$REPO/.agent/workflows/"* ".agent/workflows/"
+  echo "✅ Copied workflows (/coordinate)"
+fi
 
 # Copy shared resources first (required by all skills)
 if [ -d ".agent/skills/_shared" ]; then
@@ -322,6 +331,7 @@ git check-ignore .agent/skills/backend-agent/SKILL.md  # should be blank
 
 Integration is complete when:
 
+- ✅ `.agent/workflows/coordinate.md` exists (for `/coordinate` command)
 - ✅ `_shared/` common resources exist in `.agent/skills/_shared/`
 - ✅ All 8 skills exist in `.agent/skills/`
 - ✅ Each skill has `SKILL.md` and `resources/` directory

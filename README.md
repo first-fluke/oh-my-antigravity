@@ -70,6 +70,12 @@ All skills are now available in your project!
 → workflow-guide → PM Agent plans → agents spawned in Agent Manager
 ```
 
+**Explicit coordination** (user-triggered workflow):
+```
+/coordinate
+→ Step-by-step: PM planning → agent spawning → QA review
+```
+
 ### 3. Monitor with Dashboards
 
 ```bash
@@ -180,6 +186,8 @@ Features:
 ```
 .
 ├── .agent/
+│   ├── workflows/
+│   │   └── coordinate.md           # /coordinate command (multi-agent orchestration)
 │   └── skills/
 │       ├── _shared/                    # Common resources (not a skill)
 │       │   ├── serena-memory-protocol.md

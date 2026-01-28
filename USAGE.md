@@ -183,16 +183,24 @@ You: "Create a button component"
   → Get component immediately
 ```
 
-### Workflow B: Multi-Agent Project
+### Workflow B: Multi-Agent Project (Auto)
 
 ```
 You: "Build a TODO app with authentication"
-  → workflow-guide activates
+  → workflow-guide activates automatically
   → PM Agent creates plan
   → You spawn agents in Agent Manager
   → Agents work in parallel
   → QA Agent reviews
   → Fix issues, iterate
+```
+
+### Workflow B-2: Multi-Agent Project (Explicit)
+
+```
+You: /coordinate
+  → Step-by-step guided workflow
+  → PM planning → plan review → agent spawning → monitoring → QA review
 ```
 
 ### Workflow C: Bug Fixing
