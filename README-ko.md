@@ -291,6 +291,16 @@ Linux: `apt install inotify-tools`
 
 MIT
 
+## 문서
+
+| 문서 | 용도 |
+|------|------|
+| [README.md](./README.md) | 프로젝트 개요 (영문) |
+| [README-ko.md](./README-ko.md) | 프로젝트 개요 (한글) |
+| [USAGE.md](./USAGE.md) | 스킬 사용 방법 (영문) |
+| [USAGE-ko.md](./USAGE-ko.md) | 스킬 사용 방법 (한글) |
+| [AGENT_GUIDE.md](./AGENT_GUIDE.md) | **에이전트용**: 실행 규칙, 진행 추적, 협력 방식 |
+
 ---
 
-**Google Antigravity 2026용** | 참고: [README.md](./README.md) (English) | [USAGE.md](./USAGE.md) (상세 사용 가이드)
+**Google Antigravity 2026용** | 참고: [AGENT_GUIDE.md](./AGENT_GUIDE.md) 에이전트 실행 지침

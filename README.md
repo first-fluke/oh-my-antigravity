@@ -291,6 +291,16 @@ Linux: `apt install inotify-tools`
 
 MIT
 
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [README.md](./README.md) | Project overview (English) |
+| [README-ko.md](./README-ko.md) | Project overview (Korean) |
+| [USAGE.md](./USAGE.md) | How to use the skills (English) |
+| [USAGE-ko.md](./USAGE-ko.md) | How to use the skills (Korean) |
+| [AGENT_GUIDE.md](./AGENT_GUIDE.md) | **For agents**: execution rules, progress tracking, collaboration |
+
 ---
 
-**Built for Google Antigravity 2026** | See also: [README-ko.md](./README-ko.md) (Korean) | [USAGE.md](./USAGE.md) (Detailed usage)
+**Built for Google Antigravity 2026** | See also: [AGENT_GUIDE.md](./AGENT_GUIDE.md) for agent execution instructions

@@ -238,4 +238,14 @@ npm run info            # Show this usage guide
 
 ---
 
-**Just chat in Antigravity IDE.** For monitoring, use the dashboards. For CLI execution, use the orchestrator scripts.
+## For Agents
+
+If you are an agent being spawned by the orchestrator, see [AGENT_GUIDE.md](./AGENT_GUIDE.md) for:
+- How to track progress
+- How to update Serena Memory files
+- How to collaborate with other agents
+- How to save results
+
+---
+
+**Just chat in Antigravity IDE.** For monitoring, use the dashboards. For CLI execution, use the orchestrator scripts. For agent execution rules, see [AGENT_GUIDE.md](./AGENT_GUIDE.md).
