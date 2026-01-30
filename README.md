@@ -131,14 +131,13 @@ This creates `.agent/config/user-preferences.yaml` for your project.
 ### 3. Monitor with Dashboards
 
 ```bash
-# Via CLI (no install required)
-bunx oh-my-antigravity dashboard      # Web dashboard
-bunx oh-my-antigravity dashboard:web  # Web dashboard (alias)
+bunx oh-my-antigravity dashboard      # Terminal dashboard (bash)
+bunx oh-my-antigravity dashboard:web  # Web dashboard (Node.js)
 # → http://localhost:9847
 
 # Or via npm scripts (if cloned)
-npm run dashboard      # Terminal dashboard (bash)
-npm run dashboard:web  # Web dashboard (Node.js)
+npm run dashboard      # Terminal dashboard
+npm run dashboard:web  # Web dashboard
 ```
 
 ## How It Works
@@ -225,8 +224,6 @@ Both dashboards watch these files for real-time monitoring.
 
 ```bash
 npm run dashboard
-# or directly:
-scripts/dashboard.sh
 ```
 
 Uses `fswatch` (macOS) / `inotifywait` (Linux) to watch `.serena/memories/` and render a live status table:

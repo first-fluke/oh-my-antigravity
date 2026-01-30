@@ -100,12 +100,13 @@ antigravity open .
 ### 3. 대시보드로 모니터링
 
 ```bash
-# 터미널 대시보드 (실시간)
-npm run dashboard
-
-# 웹 대시보드 (브라우저 UI)
-npm run dashboard:web
+bunx oh-my-antigravity dashboard      # 터미널 대시보드 (실시간)
+bunx oh-my-antigravity dashboard:web  # 웹 대시보드 (브라우저 UI)
 # → http://localhost:9847
+
+# 또는 npm 스크립트 사용 (클론한 경우)
+npm run dashboard      # 터미널 대시보드
+npm run dashboard:web  # 웹 대시보드
 ```
 
 ## 동작 원리
@@ -192,8 +193,6 @@ Orchestrator가 `.serena/memories/`에 구조화된 상태를 기록합니다:
 
 ```bash
 npm run dashboard
-# 또는 직접 실행:
-scripts/dashboard.sh
 ```
 
 `fswatch` (macOS) / `inotifywait` (Linux)로 `.serena/memories/`를 감시하고 실시간 상태 테이블을 표시합니다:
