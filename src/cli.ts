@@ -7,16 +7,19 @@ import { dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 import pMap from "p-map";
 import { startDashboard } from "./dashboard";
+import { startTerminalDashboard } from "./terminal-dashboard";
 
 const args = process.argv.slice(2);
 if (args[0] === "dashboard") {
-  startDashboard();
+  startTerminalDashboard();
 } else if (args[0] === "dashboard:web") {
   startDashboard();
 } else if (args[0] === "update") {
   update().catch(console.error);
 } else if (args[0] === "doctor") {
   doctor().catch(console.error);
+} else if (args[0] === "help" || args[0] === "--help" || args[0] === "-h") {
+  showHelp();
 } else {
   main().catch(console.error);
 }
@@ -528,6 +531,39 @@ async function doctor(): Promise<void> {
     p.log.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
+}
+
+function showHelp(): void {
+  console.log(`
+${pc.bold("🛸 oh-my-antigravity")} - Multi-Agent Skills for Antigravity IDE
+
+${pc.bold("USAGE:")}
+  bunx oh-my-antigravity [command]
+
+${pc.bold("COMMANDS:")}
+  ${pc.cyan("<no command>")}    Interactive CLI - install skills with prompts
+  ${pc.cyan("dashboard")}      Start terminal dashboard (real-time agent monitoring)
+  ${pc.cyan("dashboard:web")}  Start web dashboard on http://localhost:9847
+  ${pc.cyan("update")}         Update skills to latest version from registry
+  ${pc.cyan("doctor")}         Check CLI installations, MCP configs, and skill status
+  ${pc.cyan("help")}           Show this help message
+
+${pc.bold("PRESETS:")}
+  ✨ all       - Install all available skills
+  🌐 fullstack - Frontend + Backend + PM + QA + Debug + Commit
+  🎨 frontend  - Frontend + PM + QA + Debug + Commit
+  ⚙️ backend   - Backend + PM + QA + Debug + Commit
+  📱 mobile    - Mobile + PM + QA + Debug + Commit
+
+${pc.bold("EXAMPLES:")}
+  bunx oh-my-antigravity                    # Interactive mode
+  bunx oh-my-antigravity dashboard          # Terminal dashboard
+  bunx oh-my-antigravity dashboard:web      # Web dashboard
+  bunx oh-my-antigravity update             # Update skills
+  bunx oh-my-antigravity doctor             # Check setup
+
+${pc.dim("For more info: https://github.com/first-fluke/oh-my-antigravity")}
+`);
 }
 
 async function main() {
