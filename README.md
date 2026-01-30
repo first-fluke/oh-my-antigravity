@@ -24,7 +24,7 @@ A collection of **Antigravity Skills** enabling collaborative multi-agent develo
 
 ```bash
 git clone <repository-url>
-cd subagent-orchestrator
+cd mimic-skills
 antigravity open .
 ```
 
@@ -36,16 +36,16 @@ If you already have an Antigravity project, just copy the skills:
 
 ```bash
 # Option 1: Skills only
-cp -r subagent-orchestrator/.agent/skills /path/to/your-project/.agent/
+cp -r mimic-skills/.agent/skills /path/to/your-project/.agent/
 
 # Option 2: Skills + dashboards
-cp -r subagent-orchestrator/.agent/skills /path/to/your-project/.agent/
-cp -r subagent-orchestrator/scripts/dashboard* /path/to/your-project/scripts/
-cp subagent-orchestrator/package.json /path/to/your-project/  # merge dependencies
+cp -r mimic-skills/.agent/skills /path/to/your-project/.agent/
+cp -r mimic-skills/scripts/dashboard* /path/to/your-project/scripts/
+cp mimic-skills/package.json /path/to/your-project/  # merge dependencies
 
 # Option 3: Specific skills only
-cp -r subagent-orchestrator/.agent/skills/backend-agent /path/to/your-project/.agent/skills/
-cp -r subagent-orchestrator/.agent/skills/frontend-agent /path/to/your-project/.agent/skills/
+cp -r mimic-skills/.agent/skills/backend-agent /path/to/your-project/.agent/skills/
+cp -r mimic-skills/.agent/skills/frontend-agent /path/to/your-project/.agent/skills/
 ```
 
 Then in your project:
@@ -412,6 +412,80 @@ Linux: `apt install inotify-tools`
 1. Review outputs in `.gemini/antigravity/brain/`
 2. Re-spawn one agent referencing the other's output
 3. Use QA Agent for final consistency check
+
+## Central Registry (For Multi-Repo Setup)
+
+This repository can serve as a **central registry** for agent skills, enabling multiple consumer projects to stay in sync with version-controlled updates.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Central Registry (this repo)                           │
+│  • release-please for automatic versioning              │
+│  • CHANGELOG.md auto-generation                         │
+│  • prompt-manifest.json (version/files/checksums)       │
+│  • agent-skills.tar.gz release artifact                 │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│  Consumer Repo                                          │
+│  • .agent-registry.yaml for version pinning             │
+│  • New version detection → PR (no auto-merge)           │
+│  • Reusable Action for file sync                        │
+└─────────────────────────────────────────────────────────┘
+```
+
+### For Registry Maintainers
+
+Releases are automated via [release-please](https://github.com/googleapis/release-please):
+
+1. **Conventional Commits**: Use `feat:`, `fix:`, `chore:`, etc. prefixes
+2. **Release PR**: Automatically created/updated on push to `main`
+3. **Release**: Merge the Release PR to create a GitHub Release with:
+   - `CHANGELOG.md` (auto-generated)
+   - `prompt-manifest.json` (file list + SHA256 checksums)
+   - `agent-skills.tar.gz` (compressed `.agent/` directory)
+
+### For Consumer Projects
+
+1. **Copy templates** from `docs/consumer-templates/` to your project:
+
+   ```bash
+   # Configuration file
+   cp docs/consumer-templates/.agent-registry.yaml /path/to/your-project/
+
+   # GitHub workflows
+   cp docs/consumer-templates/check-registry-updates.yml /path/to/your-project/.github/workflows/
+   cp docs/consumer-templates/sync-agent-registry.yml /path/to/your-project/.github/workflows/
+   ```
+
+2. **Edit `.agent-registry.yaml`** to pin your desired version:
+
+   ```yaml
+   registry:
+     repo: gahyun-git/mimic-skills
+   version: "1.2.0"  # Pin to specific version
+   ```
+
+3. **Workflows**:
+   - `check-registry-updates.yml`: Weekly check for new versions → creates PR
+   - `sync-agent-registry.yml`: Syncs `.agent/` when version changes
+
+**Important**: Auto-merge is disabled by design. All version updates require manual review.
+
+### Using the Reusable Action
+
+Consumer projects can use the sync action directly:
+
+```yaml
+- uses: gahyun-git/mimic-skills/.github/actions/sync-agent-registry@main
+  with:
+    registry-repo: gahyun-git/mimic-skills
+    version: '1.2.0'  # or 'latest'
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
 
 ## License
 
