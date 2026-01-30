@@ -100,6 +100,9 @@ antigravity open .
 ### 3. 대시보드로 모니터링
 
 ```bash
+# bun이 없으면 먼저 설치:
+# curl -fsSL https://bun.sh/install | bash
+
 bunx oh-my-antigravity dashboard      # 터미널 대시보드 (실시간)
 bunx oh-my-antigravity dashboard:web  # 웹 대시보드 (브라우저 UI)
 # → http://localhost:9847
@@ -192,6 +195,9 @@ Orchestrator가 `.serena/memories/`에 구조화된 상태를 기록합니다:
 ### 터미널 대시보드
 
 ```bash
+# bun이 없으면 먼저 설치:
+# curl -fsSL https://bun.sh/install | bash
+
 bunx oh-my-antigravity dashboard
 ```
 
