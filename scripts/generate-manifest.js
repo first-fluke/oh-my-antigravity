@@ -6,9 +6,9 @@
  * Example: node scripts/generate-manifest.js 1.2.0
  */
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
 
 const AGENT_DIR = '.agent';
 const MANIFEST_FILE = 'prompt-manifest.json';
