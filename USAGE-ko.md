@@ -173,6 +173,7 @@ Antigravity가 자동으로 요청을 스킬에 매칭시킵니다. 스킬을 �
 | qa-agent | "보안 검토", "감사" | 우선순위가 있는 QA 리포트 |
 | debug-agent | 버그 리포트, 에러 메시지 | 수정된 코드, 회귀 테스트 |
 | orchestrator | CLI 서브에이전트 실행 | `.agent/results/`에 결과 저장 |
+| commit | "commit", "커밋해줘" | Git 커밋 (기능별 자동 분리) |
 
 ---
 

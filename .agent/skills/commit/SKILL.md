@@ -42,6 +42,29 @@ git diff --staged
 git log --oneline -5
 ```
 
+### Step 1.5: Split by Feature (if needed)
+변경 파일이 여러 기능/도메인에 걸쳐 있으면, **기능 단위로 커밋을 분리**하라.
+
+**분리 기준:**
+- 서로 다른 scope (예: workflows vs skills vs docs)
+- 서로 다른 type (예: feat vs fix vs docs)
+- 논리적으로 독립된 변경사항
+
+**예시:**
+```
+# 변경 파일 목록:
+.agent/workflows/*.md (7개)     → fix(workflows): ...
+.agent/skills/**/*.md (4개)     → fix(skills): ...
+USAGE.md, USAGE-ko.md           → docs: ...
+
+# 3개의 커밋으로 분리
+```
+
+**분리하지 않는 경우:**
+- 모든 변경이 하나의 기능에 속함
+- 변경 파일 수가 적음 (5개 이하)
+- 사용자가 단일 커밋 요청
+
 ### Step 2: Determine Commit Type
 변경 내용 분석 → 적절한 type 선택:
 - 새 파일 추가 → `feat`

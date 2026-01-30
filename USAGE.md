@@ -173,6 +173,7 @@ Agents can work in separate directories to avoid conflicts:
 | qa-agent | "review security", "audit" | QA report with prioritized fixes |
 | debug-agent | Bug reports, error messages | Fixed code, regression tests |
 | orchestrator | CLI sub-agent execution | Results in `.agent/results/` |
+| commit | "commit", "커밋해줘" | Git commits (auto-splits by feature) |
 
 ---
 
