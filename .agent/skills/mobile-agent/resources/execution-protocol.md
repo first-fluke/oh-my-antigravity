@@ -4,8 +4,12 @@
 1. **Assess difficulty** — see `../_shared/difficulty-guide.md`
    - **Simple**: Skip to Step 3 | **Medium**: All 4 steps | **Complex**: All steps + checkpoints
 2. **Check lessons** — read your domain section in `../_shared/lessons-learned.md`
-3. **Clarify requirements** — if ambiguous, follow `../_shared/clarification-protocol.md`
+3. **Clarify requirements** — follow `../_shared/clarification-protocol.md`
+   - Check **Uncertainty Triggers**: 비즈니스 로직, 보안/인증, 기존 코드 충돌?
+   - Determine level: LOW → proceed | MEDIUM → present options | HIGH → ask immediately
 4. **Budget context** — follow `../_shared/context-budget.md` (read symbols, not whole files)
+
+**⚠️ Intelligent Escalation**: When uncertain, escalate early. Don't blindly proceed.
 
 Follow these steps in order (adjust depth by difficulty).
 
