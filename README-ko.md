@@ -2,6 +2,11 @@
 
 Google Antigravity IDE용 전문 에이전트 스킬 모음. PM, Frontend, Backend, Mobile, QA, Debug 전문 에이전트가 Agent Manager, CLI 기반 SubAgent Orchestrator, 실시간 Serena Memory 대시보드를 통해 협업합니다.
 
+> **마음에 드셨나요?** 스타 눌러주세요!
+> ```bash
+> gh repo star first-fluke/oh-my-antigravity
+> ```
+
 ## 이게 뭔가요?
 
 멀티 에이전트 협업 개발을 위한 **Antigravity Skills** 모음입니다. 작업을 전문 에이전트에게 분배합니다:

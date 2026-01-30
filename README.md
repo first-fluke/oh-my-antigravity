@@ -2,6 +2,11 @@
 
 Professional agent skills for Google Antigravity IDE featuring specialized PM, Frontend, Backend, Mobile, QA, and Debug agents — coordinated through Antigravity's Agent Manager, CLI-based SubAgent Orchestrator, and real-time Serena Memory dashboards.
 
+> **Like this project?** Give it a star!
+> ```bash
+> gh repo star first-fluke/oh-my-antigravity
+> ```
+
 ## What Is This?
 
 A collection of **Antigravity Skills** enabling collaborative multi-agent development. Work is distributed across expert agents:
