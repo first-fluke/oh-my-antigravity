@@ -62,7 +62,7 @@ mkdir -p .agent/skills
 
 Copy workflows, shared resources, and each skill individually (this prevents overwriting):
 ```bash
-REPO="/tmp/mimic-skills"  # temp clone location
+REPO="/tmp/oh-my-antigravity"  # temp clone location
 
 # Copy workflows (user-triggered /commands)
 mkdir -p .agent/workflows
@@ -175,7 +175,7 @@ If user chose NO dashboards in Step 4, skip this.
 If YES, proceed:
 
 ```bash
-REPO="/tmp/mimic-skills"
+REPO="/tmp/oh-my-antigravity"
 mkdir -p ./scripts
 
 # Copy terminal dashboard

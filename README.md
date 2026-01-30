@@ -24,7 +24,7 @@ A collection of **Antigravity Skills** enabling collaborative multi-agent develo
 
 ```bash
 git clone <repository-url>
-cd mimic-skills
+cd oh-my-antigravity
 antigravity open .
 ```
 
@@ -36,16 +36,16 @@ If you already have an Antigravity project, just copy the skills:
 
 ```bash
 # Option 1: Skills only
-cp -r mimic-skills/.agent/skills /path/to/your-project/.agent/
+cp -r oh-my-antigravity/.agent/skills /path/to/your-project/.agent/
 
 # Option 2: Skills + dashboards
-cp -r mimic-skills/.agent/skills /path/to/your-project/.agent/
-cp -r mimic-skills/scripts/dashboard* /path/to/your-project/scripts/
-cp mimic-skills/package.json /path/to/your-project/  # merge dependencies
+cp -r oh-my-antigravity/.agent/skills /path/to/your-project/.agent/
+cp -r oh-my-antigravity/scripts/dashboard* /path/to/your-project/scripts/
+cp oh-my-antigravity/package.json /path/to/your-project/  # merge dependencies
 
 # Option 3: Specific skills only
-cp -r mimic-skills/.agent/skills/backend-agent /path/to/your-project/.agent/skills/
-cp -r mimic-skills/.agent/skills/frontend-agent /path/to/your-project/.agent/skills/
+cp -r oh-my-antigravity/.agent/skills/backend-agent /path/to/your-project/.agent/skills/
+cp -r oh-my-antigravity/.agent/skills/frontend-agent /path/to/your-project/.agent/skills/
 ```
 
 Then in your project:
@@ -465,7 +465,7 @@ Releases are automated via [release-please](https://github.com/googleapis/releas
 
    ```yaml
    registry:
-     repo: gahyun-git/mimic-skills
+     repo: first-fluke/oh-my-antigravity
    version: "1.2.0"  # Pin to specific version
    ```
 
@@ -480,9 +480,9 @@ Releases are automated via [release-please](https://github.com/googleapis/releas
 Consumer projects can use the sync action directly:
 
 ```yaml
-- uses: gahyun-git/mimic-skills/.github/actions/sync-agent-registry@main
+- uses: first-fluke/oh-my-antigravity/.github/actions/sync-agent-registry@main
   with:
-    registry-repo: gahyun-git/mimic-skills
+    registry-repo: first-fluke/oh-my-antigravity
     version: '1.2.0'  # or 'latest'
     github-token: ${{ secrets.GITHUB_TOKEN }}
 ```

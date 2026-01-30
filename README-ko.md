@@ -24,7 +24,7 @@ Google Antigravity IDE용 전문 에이전트 스킬 모음. PM, Frontend, Backe
 
 ```bash
 git clone <repository-url>
-cd mimic-skills
+cd oh-my-antigravity
 antigravity open .
 ```
 
@@ -36,16 +36,16 @@ Antigravity가 `.agent/skills/`의 스킬을 자동 감지합니다.
 
 ```bash
 # 옵션 1: 스킬만 복사
-cp -r mimic-skills/.agent/skills /path/to/your-project/.agent/
+cp -r oh-my-antigravity/.agent/skills /path/to/your-project/.agent/
 
 # 옵션 2: 스킬 + 대시보드
-cp -r mimic-skills/.agent/skills /path/to/your-project/.agent/
-cp -r mimic-skills/scripts/dashboard* /path/to/your-project/scripts/
-cp mimic-skills/package.json /path/to/your-project/  # 의존성 병합
+cp -r oh-my-antigravity/.agent/skills /path/to/your-project/.agent/
+cp -r oh-my-antigravity/scripts/dashboard* /path/to/your-project/scripts/
+cp oh-my-antigravity/package.json /path/to/your-project/  # 의존성 병합
 
 # 옵션 3: 특정 스킬만
-cp -r mimic-skills/.agent/skills/backend-agent /path/to/your-project/.agent/skills/
-cp -r mimic-skills/.agent/skills/frontend-agent /path/to/your-project/.agent/skills/
+cp -r oh-my-antigravity/.agent/skills/backend-agent /path/to/your-project/.agent/skills/
+cp -r oh-my-antigravity/.agent/skills/frontend-agent /path/to/your-project/.agent/skills/
 ```
 
 본인 프로젝트에서:

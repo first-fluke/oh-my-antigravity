@@ -45,9 +45,9 @@ jobs:
 
       - name: Sync from registry
         # TODO: Replace with your registry repo
-        uses: gahyun-git/mimic-skills/.github/actions/sync-agent-registry@main
+        uses: first-fluke/oh-my-antigravity/.github/actions/sync-agent-registry@main
         with:
-          registry-repo: gahyun-git/mimic-skills
+          registry-repo: first-fluke/oh-my-antigravity
           version: ${{ steps.config.outputs.version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 

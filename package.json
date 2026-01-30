@@ -1,5 +1,5 @@
 {
-  "name": "mimic-skills",
+  "name": "oh-my-antigravity",
   "version": "1.0.0",
   "description": "Professional agent skills for Google Antigravity IDE - PM, Frontend, Backend, Mobile, QA, and Debug specialists that work together seamlessly",
   "keywords": [
@@ -31,7 +31,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gahyun-git/mimic-skills"
+    "url": "https://github.com/first-fluke/oh-my-antigravity"
   },
   "antigravity": {
     "skillsPath": ".agent/skills",

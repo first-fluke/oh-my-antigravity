@@ -1,8 +1,8 @@
 {
-  "name": "mimic-skills",
+  "name": "oh-my-antigravity",
   "version": "1.0.0",
   "releaseDate": "2026-01-30T10:32:22.796Z",
-  "repository": "https://github.com/gahyun-git/mimic-skills",
+  "repository": "https://github.com/first-fluke/oh-my-antigravity",
   "files": [
     {
       "path": ".agent/config/user-preferences.yaml",

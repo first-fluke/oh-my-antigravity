@@ -5,7 +5,7 @@ inputs:
   registry-repo:
     description: 'Registry repository (owner/repo)'
     required: true
-    default: 'gahyun-git/mimic-skills'
+    default: 'first-fluke/oh-my-antigravity'
   version:
     description: 'Version to sync (e.g., "1.2.0" or "latest")'
     required: true

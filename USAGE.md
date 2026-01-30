@@ -4,7 +4,7 @@
 
 1. **Open in Antigravity IDE**
    ```bash
-   antigravity open /path/to/mimic-skills
+   antigravity open /path/to/oh-my-antigravity
    ```
 
 2. **Skills are automatically detected.** Antigravity scans `.agent/skills/` and indexes all available skills.

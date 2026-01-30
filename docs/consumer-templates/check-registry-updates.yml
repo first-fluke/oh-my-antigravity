@@ -39,7 +39,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # TODO: Replace with your registry repo
-          REGISTRY_REPO: gahyun-git/mimic-skills
+          REGISTRY_REPO: first-fluke/oh-my-antigravity
         run: |
           LATEST=$(gh api "repos/${REGISTRY_REPO}/releases/latest" --jq '.tag_name' | sed 's/^v//')
           echo "version=$LATEST" >> $GITHUB_OUTPUT
@@ -99,7 +99,7 @@ jobs:
 
           ### What's included
           - Updated agent skills and workflows from central registry
-          - See [CHANGELOG](https://github.com/gahyun-git/mimic-skills/blob/main/CHANGELOG.md) for details
+          - See [CHANGELOG](https://github.com/first-fluke/oh-my-antigravity/blob/main/CHANGELOG.md) for details
 
           ### Before merging
           1. Review the changes in the registry CHANGELOG

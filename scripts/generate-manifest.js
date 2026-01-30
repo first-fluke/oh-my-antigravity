@@ -87,10 +87,10 @@ function main() {
   }));
 
   const manifest = {
-    name: 'mimic-skills',
+    name: 'oh-my-antigravity',
     version: version,
     releaseDate: new Date().toISOString(),
-    repository: 'https://github.com/gahyun-git/mimic-skills',
+    repository: 'https://github.com/first-fluke/oh-my-antigravity',
     files: filesWithChecksums,
     checksums: {
       algorithm: 'sha256'

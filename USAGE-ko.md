@@ -4,7 +4,7 @@
 
 1. **Antigravity IDE에서 열기**
    ```bash
-   antigravity open /path/to/mimic-skills
+   antigravity open /path/to/oh-my-antigravity
    ```
 
 2. **스킬이 자동으로 감지됩니다.** Antigravity가 `.agent/skills/`를 스캔하여 모든 스킬을 인덱싱합니다.
