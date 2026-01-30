@@ -45,7 +45,7 @@ cp -r oh-my-antigravity/.agent/skills /path/to/your-project/.agent/
 
 # 옵션 2: 스킬 + 대시보드
 cp -r oh-my-antigravity/.agent/skills /path/to/your-project/.agent/
-cp -r oh-my-antigravity/scripts/dashboard* /path/to/your-project/scripts/
+
 cp oh-my-antigravity/package.json /path/to/your-project/  # 의존성 병합
 
 # 옵션 3: 특정 스킬만
@@ -279,10 +279,6 @@ bunx oh-my-antigravity dashboard:web
 ├── .serena/
 │   └── memories/                   # 런타임 상태 (gitignore 처리됨)
 ├── scripts/
-│   ├── dashboard.sh                # 터미널 대시보드
-│   ├── dashboard-web/
-│   │   ├── server.js               # 웹 대시보드 서버
-│   │   └── public/index.html       # 웹 대시보드 UI
 │   ├── spawn-subagent.sh           # 서브에이전트 실행기
 │   └── poll-status.sh              # 상태 폴링
 ├── package.json
@@ -389,8 +385,8 @@ SubAgent Orchestrator를 사용하려면 최소 1개의 CLI 도구 필요:
 
 | 스크립트 | 명령어 | 설명 |
 |---------|--------|------|
-| `npm run dashboard` | `bash scripts/dashboard.sh` | 터미널 실시간 대시보드 |
-| `npm run dashboard:web` | `node scripts/dashboard-web/server.js` | 웹 대시보드 (포트 9847) |
+| `npm run dashboard` | `bunx oh-my-antigravity dashboard` | 터미널 실시간 대시보드 |
+| `npm run dashboard:web` | `bunx oh-my-antigravity dashboard:web` | 웹 대시보드 (포트 9847) |
 | `npm run validate` | `node scripts/validate-skills.js` | 스킬 파일 검증 |
 | `npm run info` | `cat USAGE.md` | 사용 가이드 출력 |
 

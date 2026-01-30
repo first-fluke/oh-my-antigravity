@@ -156,8 +156,8 @@ If `dashboard` or `dashboard:web` scripts already exist, skip to Step 5.
 
 Otherwise, add to `scripts` section:
 ```json
-"dashboard": "bash scripts/dashboard.sh",
-"dashboard:web": "node scripts/dashboard-web/server.js"
+"dashboard": "bunx oh-my-antigravity dashboard",
+"dashboard:web": "bunx oh-my-antigravity dashboard:web"
 ```
 
 **Verification:**
@@ -168,29 +168,20 @@ npm run dashboard:web --help 2>&1 | head -3
 
 ---
 
-## Step 5: Copy Dashboard Scripts (If User Wants Them)
+## Step 5: Dashboard Access
 
-If user chose NO dashboards in Step 4, skip this.
+Dashboards are now built into the CLI. No manual copying needed.
 
-If YES, proceed:
-
+Users can run:
 ```bash
-REPO="/tmp/oh-my-antigravity"
-mkdir -p ./scripts
-
-# Copy terminal dashboard
-cp "$REPO/scripts/dashboard.sh" "./scripts/dashboard.sh"
-chmod +x "./scripts/dashboard.sh"
-
-# Copy web dashboard
-cp -r "$REPO/scripts/dashboard-web" "./scripts/"
-
-echo "✅ Dashboard scripts copied"
+bunx oh-my-antigravity dashboard      # Terminal dashboard
+bunx oh-my-antigravity dashboard:web  # Web dashboard
 ```
 
-**Verification:**
+Or via npm scripts (if added to package.json):
 ```bash
-test -f ./scripts/dashboard.sh && test -d ./scripts/dashboard-web && echo "✅ Dashboards ready"
+npm run dashboard
+npm run dashboard:web
 ```
 
 ---
@@ -243,7 +234,7 @@ Integrated skills:
 - debug-agent: Bug fixing
 - orchestrator: CLI-based sub-agent spawning
 
-Dashboards: $([ -d ./scripts/dashboard-web ] && echo 'enabled' || echo 'disabled')"
+Dashboards: $(command -v bunx >/dev/null 2>&1 && echo 'available via bunx' || echo 'install bun first')
 ```
 
 If commit fails:

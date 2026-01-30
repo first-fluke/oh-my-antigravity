@@ -64,6 +64,9 @@ A collection of **Antigravity Skills** enabling collaborative multi-agent develo
 ### Option 1: Interactive CLI (Recommended)
 
 ```bash
+# Install bun if you don't have it:
+# curl -fsSL https://bun.sh/install | bash
+
 bunx oh-my-antigravity
 ```
 
@@ -310,10 +313,6 @@ Features:
 ├── .serena/
 │   └── memories/                   # Runtime state (gitignored)
 ├── scripts/
-│   ├── dashboard.sh                # Terminal dashboard
-│   ├── dashboard-web/
-│   │   ├── server.js               # Web dashboard server
-│   │   └── public/index.html       # Web dashboard UI
 │   ├── spawn-subagent.sh           # Sub-agent spawner
 │   └── poll-status.sh              # Status polling
 ├── package.json
@@ -420,8 +419,8 @@ For SubAgent Orchestrator, at least one CLI tool:
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| `npm run dashboard` | `bash scripts/dashboard.sh` | Terminal real-time dashboard |
-| `npm run dashboard:web` | `node scripts/dashboard-web/server.js` | Web dashboard on port 9847 |
+| `npm run dashboard` | `bunx oh-my-antigravity dashboard` | Terminal real-time dashboard |
+| `npm run dashboard:web` | `bunx oh-my-antigravity dashboard:web` | Web dashboard on port 9847 |
 | `npm run validate` | `node scripts/validate-skills.js` | Validate skill files |
 | `npm run info` | `cat USAGE.md` | Show usage guide |
 

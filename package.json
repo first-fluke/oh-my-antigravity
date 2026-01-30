@@ -43,8 +43,8 @@
     "validate": "node scripts/validate-skills.js",
     "setup": "echo '✅ Skills are ready! Open this project in Antigravity IDE and start chatting.'",
     "info": "cat USAGE.md",
-    "dashboard": "bash scripts/dashboard.sh",
-    "dashboard:web": "node scripts/dashboard-web/server.js"
+    "dashboard": "bunx oh-my-antigravity dashboard",
+    "dashboard:web": "bunx oh-my-antigravity dashboard:web"
   },
   "dependencies": {
     "@clack/prompts": "^1.0.0",
