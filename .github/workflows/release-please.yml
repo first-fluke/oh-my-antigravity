@@ -35,10 +35,15 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Generate prompt-manifest.json
         env:
           RELEASE_VERSION: ${{ needs.release-please.outputs.version }}
-        run: node scripts/generate-manifest.js "$RELEASE_VERSION"
+        run: bunx tsx src/generate-manifest.ts "$RELEASE_VERSION"
 
       - name: Create tarball
         run: |

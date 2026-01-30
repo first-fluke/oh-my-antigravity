@@ -2,8 +2,8 @@
 /**
  * Generate prompt-manifest.json with file list and SHA256 checksums
  *
- * Usage: node scripts/generate-manifest.js <version>
- * Example: node scripts/generate-manifest.js 1.2.0
+ * Usage: bunx tsx src/generate-manifest.ts <version>
+ * Example: bunx tsx src/generate-manifest.ts 1.2.0
  */
 
 import fs from 'node:fs';
@@ -13,12 +13,39 @@ import crypto from 'node:crypto';
 const AGENT_DIR = '.agent';
 const MANIFEST_FILE = 'prompt-manifest.json';
 
-function calculateSha256(filePath) {
+interface FileInfo {
+  path: string;
+  fullPath: string;
+}
+
+interface ManifestFile {
+  path: string;
+  sha256: string;
+  size: number;
+}
+
+interface Manifest {
+  name: string;
+  version: string;
+  releaseDate: string;
+  repository: string;
+  files: ManifestFile[];
+  checksums: {
+    algorithm: string;
+  };
+  metadata: {
+    skillCount: number;
+    workflowCount: number;
+    totalFiles: number;
+  };
+}
+
+function calculateSha256(filePath: string): string {
   const content = fs.readFileSync(filePath);
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
-function getAllFiles(dirPath, arrayOfFiles = [], basePath = '') {
+function getAllFiles(dirPath: string, arrayOfFiles: FileInfo[] = [], basePath = ''): FileInfo[] {
   const files = fs.readdirSync(dirPath);
 
   for (const file of files) {
@@ -38,7 +65,7 @@ function getAllFiles(dirPath, arrayOfFiles = [], basePath = '') {
   return arrayOfFiles;
 }
 
-function countByType(files) {
+function countByType(files: FileInfo[]): { skillCount: number; workflowCount: number } {
   let skillCount = 0;
   let workflowCount = 0;
 
@@ -54,12 +81,12 @@ function countByType(files) {
   return { skillCount, workflowCount };
 }
 
-function main() {
+function main(): void {
   const version = process.argv[2];
 
   if (!version) {
-    console.error('Usage: node scripts/generate-manifest.js <version>');
-    console.error('Example: node scripts/generate-manifest.js 1.2.0');
+    console.error('Usage: bunx tsx src/generate-manifest.ts <version>');
+    console.error('Example: bunx tsx src/generate-manifest.ts 1.2.0');
     process.exit(1);
   }
 
@@ -80,13 +107,13 @@ function main() {
   const allFiles = getAllFiles(AGENT_DIR, [], AGENT_DIR);
   const { skillCount, workflowCount } = countByType(allFiles);
 
-  const filesWithChecksums = allFiles.map(file => ({
+  const filesWithChecksums: ManifestFile[] = allFiles.map(file => ({
     path: file.path,
     sha256: calculateSha256(file.fullPath),
     size: fs.statSync(file.fullPath).size
   }));
 
-  const manifest = {
+  const manifest: Manifest = {
     name: 'oh-my-antigravity',
     version: version,
     releaseDate: new Date().toISOString(),
