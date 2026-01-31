@@ -254,13 +254,6 @@ interface CLICheck {
   installCmd: string;
 }
 
-interface DashboardCheck {
-  name: string;
-  available: boolean;
-  type: "terminal" | "web";
-  installCmd?: string;
-}
-
 interface SkillCheck {
   name: string;
   installed: boolean;
@@ -304,51 +297,6 @@ async function checkMCPConfig(cliName: string): Promise<{ configured: boolean; p
   return { configured: false };
 }
 
-async function checkDashboardDependencies(): Promise<DashboardCheck[]> {
-  const checks: DashboardCheck[] = [];
-
-  try {
-    execSync("which fswatch", { stdio: "ignore" });
-    checks.push({ name: "fswatch", available: true, type: "terminal" });
-  } catch {
-    checks.push({
-      name: "fswatch",
-      available: false,
-      type: "terminal",
-      installCmd: "brew install fswatch (macOS) or apt install inotify-tools (Linux)",
-    });
-  }
-
-  const webDashboardPath = join(process.cwd(), "scripts", "dashboard-web", "server.js");
-  if (existsSync(webDashboardPath)) {
-    try {
-      const nodeModulesPath = join(process.cwd(), "node_modules");
-      const hasChokidar = existsSync(join(nodeModulesPath, "chokidar"));
-      const hasWs = existsSync(join(nodeModulesPath, "ws"));
-
-      if (hasChokidar && hasWs) {
-        checks.push({ name: "chokidar + ws", available: true, type: "web" });
-      } else {
-        checks.push({
-          name: "chokidar + ws",
-          available: false,
-          type: "web",
-          installCmd: "npm install",
-        });
-      }
-    } catch {
-      checks.push({
-        name: "chokidar + ws",
-        available: false,
-        type: "web",
-        installCmd: "npm install",
-      });
-    }
-  }
-
-  return checks;
-}
-
 async function checkSkills(): Promise<SkillCheck[]> {
   const skillsDir = join(process.cwd(), ".agent", "skills");
   if (!existsSync(skillsDir)) return [];
@@ -374,10 +322,10 @@ async function doctor(jsonMode = false): Promise<void> {
   const cwd = process.cwd();
 
   const clis = await Promise.all([
-    checkCLI("gemini", "gemini", "npm install -g @anthropic-ai/gemini-cli"),
-    checkCLI("claude", "claude", "npm install -g @anthropic-ai/claude-code"),
-    checkCLI("codex", "codex", "npm install -g @openai/codex"),
-    checkCLI("qwen", "qwen", "pip install qwen-cli"),
+    checkCLI("gemini", "gemini", "bun install --global @anthropic-ai/gemini-cli"),
+    checkCLI("claude", "claude", "bun install --global @anthropic-ai/claude-code"),
+    checkCLI("codex", "codex", "bun install --global @openai/codex"),
+    checkCLI("qwen", "qwen", "bun install --global @qwen-code/qwen-code"),
   ]);
 
   const mcpChecks = await Promise.all(
@@ -387,7 +335,6 @@ async function doctor(jsonMode = false): Promise<void> {
     })
   );
 
-  const dashboardChecks = await checkDashboardDependencies();
   const skillChecks = await checkSkills();
 
   const serenaDir = join(cwd, ".serena", "memories");
@@ -407,16 +354,14 @@ async function doctor(jsonMode = false): Promise<void> {
   const totalIssues =
     missingCLIs.length +
     mcpChecks.filter((c) => !c.mcp.configured).length +
-    dashboardChecks.filter((d) => !d.available).length +
     missingSkills.length;
 
-  if (jsonMode) {
+    if (jsonMode) {
     const result = {
       ok: totalIssues === 0,
       issues: totalIssues,
       clis: clis.map((c) => ({ name: c.name, installed: c.installed, version: c.version || null })),
       mcp: mcpChecks.map((c) => ({ name: c.name, configured: c.mcp.configured, path: c.mcp.path || null })),
-      dashboard: dashboardChecks.map((d) => ({ name: d.name, available: d.available, type: d.type })),
       skills: skillChecks.length > 0
         ? skillChecks.map((s) => ({ name: s.name, installed: s.installed, complete: s.hasSkillMd }))
         : [],
@@ -471,21 +416,6 @@ async function doctor(jsonMode = false): Promise<void> {
 
       p.note(mcpTable, "MCP Status");
     }
-
-    const dashboardTable = [
-      pc.bold("📊 Dashboard Dependencies"),
-      "┌─────────────────┬──────────┬────────────────────────────────────┐",
-      `│ ${pc.bold("Dependency")}      │ ${pc.bold("Status")}     │ ${pc.bold("Install Command")}                    │`,
-      "├─────────────────┼──────────┼────────────────────────────────────┤",
-      ...dashboardChecks.map((check) => {
-        const status = check.available ? pc.green("✅ Available") : pc.red("❌ Missing");
-        const installCmd = check.installCmd || "-";
-        return `│ ${check.name.padEnd(15)} │ ${status.padEnd(8)} │ ${installCmd.padEnd(34)} │`;
-      }),
-      "└─────────────────┴──────────┴────────────────────────────────────┘",
-    ].join("\n");
-
-    p.note(dashboardTable, "Dashboard Status");
 
     const installedCount = skillChecks.filter((s) => s.installed).length;
     const completeCount = skillChecks.filter((s) => s.hasSkillMd).length;
