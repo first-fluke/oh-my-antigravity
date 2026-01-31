@@ -391,8 +391,7 @@ bunx oh-my-ag dashboard:web
 ## 사전 요구 사항
 
 - **Google Antigravity** (2026+)
-- **Node.js** (웹 대시보드용)
-- **fswatch** (macOS) 또는 **inotify-tools** (Linux) — 터미널 대시보드용
+- **Bun** (CLI 및 대시보드용)
 
 SubAgent Orchestrator를 사용하려면 최소 1개의 CLI 도구 필요:
 
@@ -422,13 +421,6 @@ bunx oh-my-ag help           # 도움말 표시
 
 ### 대시보드에 "No agents detected" 표시
 메모리 파일이 아직 생성되지 않았습니다. Orchestrator를 실행하거나 `.serena/memories/`에 수동으로 파일을 생성하세요.
-
-### 웹 대시보드가 시작되지 않음
-먼저 `npm install`로 `chokidar`와 `ws` 의존성을 설치하세요.
-
-### 터미널 대시보드: "fswatch not found"
-macOS: `brew install fswatch`
-Linux: `apt install inotify-tools`
 
 ### Antigravity에서 스킬이 로드되지 않음
 1. `antigravity open .`으로 프로젝트 열기

@@ -421,8 +421,7 @@ Each skill provides domain-specific resources:
 ## Prerequisites
 
 - **Google Antigravity** (2026+)
-- **Node.js** (for web dashboard)
-- **fswatch** (macOS) or **inotify-tools** (Linux) for terminal dashboard
+- **Bun** (for CLI and dashboards)
 
 For SubAgent Orchestrator, at least one CLI tool:
 
@@ -452,13 +451,6 @@ bunx oh-my-ag help           # Show help
 
 ### Dashboard shows "No agents detected"
 Memory files haven't been created yet. Run the orchestrator or manually create files in `.serena/memories/`.
-
-### Web dashboard won't start
-Run `npm install` first to install `chokidar` and `ws` dependencies.
-
-### Terminal dashboard: "fswatch not found"
-macOS: `brew install fswatch`
-Linux: `apt install inotify-tools`
 
 ### Skills not loading in Antigravity
 1. Open project with `antigravity open .`
