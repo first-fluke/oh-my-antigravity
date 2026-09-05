@@ -4,10 +4,8 @@ description: Design workflow that creates design systems, DESIGN.md, and design 
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip phases.** Execute from Phase 1 in order.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **Do NOT write implementation code.** This workflow produces DESIGN.md, design tokens, and design guidance, not application code.
 - **You MUST use MCP tools throughout the workflow.**
   - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `search_for_pattern`) to analyze the existing codebase.
@@ -82,7 +80,7 @@ Otherwise, if the user request is vague (< 3 sentences, no section
 details):
 - Load `.agents/skills/oma-design/resources/prompt-enhancement.md`
 - Transform into section-by-section specification
-- Present enhanced prompt to user for confirmation
+- Present the enhanced prompt; clarify only material assumptions not resolved by the existing request
 
 If already detailed: skip to Phase 4.
 

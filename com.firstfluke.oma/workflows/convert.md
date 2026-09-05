@@ -4,10 +4,8 @@ description: Convert a file from one format to another, routed by media category
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **Default output location: same directory as input file.**
 - **Route by category, then by extension** — never run a document converter on a media file or vice versa.
 - **Never re-encode losslessly-convertible data destructively without saying so** — report quality/codec choices.

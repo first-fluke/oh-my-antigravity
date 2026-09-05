@@ -4,10 +4,8 @@ description: PM planning workflow that gathers requirements, decomposes them int
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **You MUST use MCP tools throughout the workflow.**
   - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `search_for_pattern`) to analyze the existing codebase.
   - Use memory tools (write/edit) to record planning results.
@@ -33,7 +31,7 @@ Emit required L1 decisions by calling `oma state emit` directly, as documented i
 
 > `docs/plans/` does not survive a fresh clone. When a specific artifact must be durable across machines (a design doc referenced from committed documentation, a promoted API contract), commit that file deliberately with `git add -f` — tracked files are unaffected by the ignore afterwards. Committed docs must never reference a plan file that has not been promoted this way.
 
-Two artifacts per plan:
+For Medium/Complex plans, produce two artifacts (Simple routing is defined in Step 3):
 
 1. **Machine-readable**: `.agents/results/plan-{sessionId}.json` consumed by `/orchestrate` and `/work`.
 2. **Human-readable**: `docs/plans/work/{NNN}-{name}.md` with task table, decision log, and progress notes. Lifecycle is tracked via the `Status` field in the file header (`Active` → `Completed`); no folder moves required.
@@ -60,7 +58,7 @@ docs/plans/
 
 ## Step 1: Gather Requirements
 
-Ask the user to describe what they want to build. Clarify:
+Extract requirements already present in the request and project context. Clarify only missing information that changes the plan:
 - Target users
 - Core features (must-have vs nice-to-have)
 - Constraints (tech stack, existing codebase)
@@ -82,7 +80,7 @@ Also search `docs/plans/work/` for related past or in-progress plans, and `docs/
 
 Use `.agents/skills/_shared/core/difficulty-guide.md` to classify:
 
-- **Simple** → no plan artifact needed; execute directly via `/work`.
+- **Simple** → for a standalone planning request, report the direct approach and matching domain skill, then end this workflow without entering `/work`. If implementation is already authorized, continue directly with that skill. If the caller requires an executable plan (e.g. `/orchestrate`), continue through Steps 4-7 and produce a minimal JSON plan; no Markdown tracker is required.
 - **Medium** → produce both JSON and a lightweight markdown tracker (skip Step 4 API contracts if not cross-boundary).
 - **Complex** → produce both artifacts with all sections plus API contracts.
 
@@ -127,7 +125,7 @@ Apply `.agents/skills/_shared/core/execution-policy.md`: proceed when the reques
 
 ## Step 7: Save Plan Artifacts
 
-Generate both artifacts.
+Generate the artifacts required by Step 3.
 
 ### 7a. Machine-readable plan
 

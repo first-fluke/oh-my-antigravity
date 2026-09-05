@@ -4,10 +4,8 @@ description: Agent-native, key-optional video generation workflow that turns a b
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order. Report completion of each step before proceeding.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **Key-optional by default (backend rule 11).** The baseline path uses **zero external API keys**: the agent writes the script, oma-voice does TTS, oma-image does visuals, captions are key-free, Remotion composites. Every paid upgrade (Pexels stock, Pixelle AIGC) sits behind a key-free fallback and is **off by default**. Never disable the fallback to force a real call, and never silently drop a requested real path.
 - **Determinism boundary = `render-spec.json` + asset files (+ seed + embedded Pretendard).** "Reproducible from script/assets, not from brief." Never edit assets or render-spec by hand after generation; re-run the stage that produced them. (Live web capture is **outside** this boundary; its manifest carries `nondeterministic: true`.)
 - **Web capture: human-driven, no credential automation, masked.** For `demo --source web`, the tool only opens a headed browser and records — a **human** performs the entire on-screen flow and any login. **NEVER** script, type, or automate credentials of any kind. The `--url` and any query tokens are **masked** in logs and the manifest; credentials are never stored or printed; all outputs stay in the run dir. The skill provides only the mechanism — assume and prescribe **nothing** about what the flow is or what the recording is for, and bake in **no** platform- or policy-specific guidance.
@@ -33,7 +31,7 @@ This workflow has two required checkpoints: **mode-selection** (Step 2) and **co
 
 ## Mode Routing
 
-Resolve the mode first — it determines aspect, source, visual track, and compositor. If the user did not name a mode, infer from intent and confirm at Step 2.
+Resolve the mode first — it determines aspect, source, visual track, and compositor. If the user did not name a mode, infer from intent and resolve material ambiguity at Step 2.
 
 | mode | aspect | source | visual track (default → opt) | compositor | output |
 |------|:---:|------|------|------|------|
@@ -49,7 +47,7 @@ For `demo`, also resolve the **source**: a recorded file or Cap → `--source fi
 
 ## Cost Guardrail & Key-Optional Notes (read before Step 4)
 
-- **Guardrail**: default `cost.guardrail_usd: 0.20` in `.agents/skills/oma-video/config/video-config.yaml` (reused from oma-image). Any provider whose estimated cost meets or exceeds the guardrail requires explicit confirmation (`-y` / `--yes` or the Step 5 checkpoint). `--max-usd <n>` overrides the threshold.
+- **Guardrail**: default `cost.guardrail_usd: 0.20` in `.agents/skills/oma-video/config/video-config.yaml` (reused from oma-image). Any provider whose estimated cost meets or exceeds the guardrail requires spend authorization (`-y` / `--yes` or the Step 5 checkpoint). Reuse an existing authorization covering that provider and amount. `--max-usd <n>` overrides the threshold.
 - **Key-optional pairs** (real path is gated; fallback is always wired):
 
   | capability | real (key/resource) | key-free fallback | deferred marker |
@@ -88,9 +86,9 @@ For `demo`, also resolve the **source**: a recorded file or Cap → `--source fi
    - `--source file`: if no `--capture <path>` is available and Cap CLI is not present, ask the user to record and provide the file path before proceeding.
    - `--source web --url <url>` (any URL — local/staging/prod): state that the tool opens a **headed browser** and records while the **human drives the entire on-screen flow** and presses ENTER to stop; **no login is ever automated**, and the `--url` plus any query tokens are masked in logs and the manifest. The capture size is derived from `--aspect`/`--device` (no hardcoded size). If the browser capture runtime is unavailable, or the session has no interactive TTY (CI / `-y` / no stdin), say so and fall back to the guided protocol — never hang. (`--capture-stop duration:<sec>|selector:<css>` supplies a non-interactive stop for CI.)
 3. Apply `.agents/skills/_shared/core/execution-policy.md`: proceed when the requested work or decision is already authorized; ask only for a material missing decision or new authorization.
-4. After the user confirms, emit and verify the mode-selection decision:
+4. Once the mode is resolved under the execution policy, emit and verify the mode-selection decision with its actual authorization source:
    ```bash
-   oma state emit "decision.made" '{"subject":"video.mode-selection","decision":"Proceed with the confirmed mode and pipeline plan.","rationale":"The user confirmed mode, aspect, visual track, and compositor before asset generation."}'
+   oma state emit "decision.made" '{"subject":"video.mode-selection","decision":"<resolved mode and pipeline plan>","rationale":"<existing instruction, delegated choice, or new user decision authorizing the plan>"}'
    oma state verify --workflow video --checkpoint mode-selection
    ```
 
@@ -155,7 +153,7 @@ For `demo`, the orchestrator produces the footage in place of synthetic visuals,
 ## Step 5: Cost Gate & `render-spec.json`
 
 1. Inspect the cost estimate the orchestrator computed across providers (`cost.usd` + breakdown in the manifest/JSON output).
-2. **If the estimate meets or exceeds the guardrail** (default $0.20, or `--max-usd`), pause and present the breakdown. **You MUST get user confirmation before the paid render proceeds.** Then emit and verify:
+2. **If the estimate meets or exceeds the guardrail** (default $0.20, or `--max-usd`), present the breakdown and reuse existing spend authorization if it covers the provider and amount. Otherwise obtain authorization before the paid render proceeds. Then emit and verify the actual decision:
    ```bash
    oma state emit "decision.made" '{"subject":"video.cost-confirmation","decision":"Proceed with the estimated paid cost or fall back to the key-free path.","rationale":"Estimated cost crossed the guardrail; the user confirmed spend or chose the fallback."}'
    oma state verify --workflow video --checkpoint cost-confirmation

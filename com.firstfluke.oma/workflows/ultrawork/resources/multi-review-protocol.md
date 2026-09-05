@@ -99,7 +99,7 @@ The phase coordinator collects these verdicts and folds them into the phase's `r
 ### 12. Final Review (Step 17)
 - **Question**: "Is this ready to deploy?"
 - **Check**: Complete checklist final verification
-- **Pass Condition**: User final approval
+- **Pass Condition**: Readiness criteria in `phase-gates.md` → SHIP_GATE are met; authorization follows the shared execution policy
 
 ---
 

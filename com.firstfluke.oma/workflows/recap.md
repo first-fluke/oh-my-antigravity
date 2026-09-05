@@ -4,10 +4,8 @@ description: Daily or period recap via `oma-recap`. Resolves a date or window fr
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **Never modify `.agents/` definitions.** SSOT protection covers skills, workflows, rules, agents, and config. It does NOT cover this workflow's own output at `.agents/results/recap/` — writing there is the expected behaviour, not a violation.
 - **Follow the host-LLM contract** in `.agents/skills/oma-recap/SKILL.md`: theme analysis, grouping rules, and Markdown output format are owned by the skill. This workflow only resolves intent, runs the CLI, and reports.
 - **Never auto-translate technical terms** in the saved recap (project names, tool names, CLI flags).

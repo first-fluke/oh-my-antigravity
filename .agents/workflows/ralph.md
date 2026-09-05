@@ -4,10 +4,8 @@ description: Ralph - persistent self-referential execution loop wrapping ultrawo
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip phases.** Execute from Phase 0 in order. Explicitly report completion of each phase to the user before proceeding to the next.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **You MUST use MCP tools throughout the entire workflow.** This is NOT optional.
   - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `find_referencing_symbols`, `search_for_pattern`) for code exploration. Do NOT use raw grep as a substitute.
   - Use file tools (`Read`/`Write`/`Edit`) to persist coordination artifacts directly to `{memoryConfig.basePath}/` (default: `.agents/state/memories/`). Do NOT use Serena's `write_memory` for workflow session state, as verification gates require durable files on disk.
@@ -42,9 +40,9 @@ Analyze the user's request and define **verifiable** completion criteria. Each c
 criteria:
   - id: C{N}
     description: "<what to achieve>"
-    verification: "<how to verify — test result, build output, file existence, command output>"
+    verification: "<how to verify — test result, non-emitting check, file existence, command output>"
     status: PENDING
-    fail_count: 0                   # consecutive failures only — resets to 0 on PASS
+    fail_count: 0                   # updated once per JUDGE by judge-protocol.md
     previous_status: null           # last non-null status from prior iteration
     regressed_at_iteration: null    # iteration number when PASS → FAIL transition was detected
     affected_paths: []              # optional glob list — only set when verification takes >30s
@@ -52,8 +50,7 @@ criteria:
 ```
 
 **Rules:**
-- Every criterion must be mechanically verifiable (test pass, build success, file exists, command output)
-- Ground subjective expectations into concrete, mechanically verifiable checks (test assertions, build status, exit code, file existence)
+- Ground every criterion in a mechanically verifiable check (test assertion, non-emitting type check, exit code, file existence). Include a build/compile/package command only when the user explicitly requested a build, per the shared execution policy.
 - Lock criteria directly into session memory and output them in the execution trace; proceed immediately to Step 0.3 and Phase 1 without halting for interactive confirmation (Ralph is an autonomous persistent execution loop)
 
 ### Step 0.3: Initialize Session
@@ -150,12 +147,12 @@ oma ralph verify --json --session-id {sessionId} --newer-than {iteration_start_i
 **The judge is a separate agent with fresh context — not a role the orchestrator plays.** The orchestrator that drove EXEC shares context with the implementation and cannot self-judge without rationalization risk. Spawning is the default; inline judging is a recorded exception.
 
 1. **Compose the judge brief.** It contains ONLY:
-   - The criteria table: id, description, verification method, previous_status, fail_count, affected_paths
+   - The current criteria snapshot: id, description, verification method, status, previous_status, fail_count, regressed_at_iteration, affected_paths, and prior verification evidence
    - The verification cache records from `session-ralph-{sessionId}.md` (if any)
    - The required output format (Step 2.2) and a pointer to `.agents/workflows/ralph/resources/judge-protocol.md`
    - Do NOT include EXEC narration, implementation summaries, or any claim about what was fixed. The judge verifies what IS, not what was intended.
 2. **Spawn the judge via Per-Agent Dispatch** (see Vendor Detection):
-   - **If Claude Code and target vendor is Claude**: `Agent(subagent_type="qa-reviewer", prompt="<judge brief>. Follow .agents/workflows/ralph/resources/judge-protocol.md. Execute every verification command and write the JUDGE result to memory as result-judge-{sessionId}-iter{N}.md.")`
+   - **If Claude Code and target vendor is Claude**: `Agent(subagent_type="qa-reviewer", prompt="<judge brief>. Follow .agents/workflows/ralph/resources/judge-protocol.md. Follow the protocol's verification and cache rules and write the JUDGE result to memory as result-judge-{sessionId}-iter{N}.md.")`
    - **Otherwise, or when native dispatch is unavailable**: `oma agent spawn qa-agent "<judge brief>" {sessionId}`
    - Verification is mechanical (run command, check exit code/output) — a lower-cost model tier is acceptable where the runtime supports per-agent model selection.
 3. **Wait for `result-judge-{sessionId}-iter{N}.md`**, then read it as the JUDGE result.
@@ -164,60 +161,15 @@ oma ralph verify --json --session-id {sessionId} --newer-than {iteration_start_i
    oma state emit "decision.made" '{"subject":"ralph.judge-inline-fallback","decision":"Run JUDGE inline in the orchestrator context.","rationale":"Subagent spawning unavailable in this runtime; judge independence is downgraded for this iteration."}'
    ```
 
-For **EVERY criterion regardless of current status** (including PASS from prior iterations), the judge executes the verification method defined in Phase 0:
-
-- Run tests, then check pass/fail count
-- Run build, then check exit code
-- Check file existence and verify path
-- Run specific commands, then check output
-
-**Why re-verify PASS criteria**: ultrawork modifies shared code (utils, configs, migrations, dependencies). A PASS in iteration N may regress in iteration N+1 when fixing other criteria. Without re-verification, "DONE" can ship silent regressions.
-
-**Heavy verification caching**: For verifications that take >30 seconds (e2e tests, integration suites), apply the caching rules in `judge-protocol.md` § "Caching for Heavy Verification" to skip re-runs when no relevant files changed.
-
-**Follow `.agents/workflows/ralph/resources/judge-protocol.md` for the full protocol.**
+Apply [Verification Execution Order](ralph/resources/judge-protocol.md#verification-execution-order), including prior PASS criteria, and its heavy-verification cache rules. The judge uses the shared execution policy when selecting or executing checks.
 
 ### Step 2.2: Produce JUDGE Result
 
-Output the JUDGE result in this exact format:
-
-```markdown
-## JUDGE Result — Iteration {N}
-
-| Criterion | Status    | Evidence                                                |
-|-----------|-----------|---------------------------------------------------------|
-| C1        | PASS      | <concrete evidence>                                     |
-| C2        | FAIL      | <concrete evidence of failure>                          |
-| C3        | BLOCKED   | <failed 3x: reason>                                     |
-| C4        | REGRESSED | previously PASS at iter N — now FAIL: <evidence + diff> |
-
-verdict: PASS | FAIL
-```
-
-If verdict is FAIL, also output:
-
-```markdown
-remaining:
-  - id: C{N}
-    reason: "<why it failed>"
-    suggested_action: "<what to try next>"
-    fail_count: {N}
-    regression: true | false        # true if status is REGRESSED
-    previous_pass_iteration: {N}    # only when regression: true
-```
+The judge writes [JUDGE Result Format](ralph/resources/judge-protocol.md#judge-result-format), the updated criterion state, and [Remaining Items](ralph/resources/judge-protocol.md#remaining-items-on-fail-verdict) when required. Status transitions and verdict computation are defined only in that protocol.
 
 ### Step 2.3: Apply JUDGE Result
 
-Before updating any criterion, capture the current `status` into `previous_status`. Then apply the transition rules in order:
-
-1. **Verification passed** → `PASS`. Reset `fail_count` to 0 and `regressed_at_iteration` to null (`fail_count` tracks **consecutive** failures only; a pass breaks the streak).
-2. **Verification failed AND `previous_status == PASS`** → `REGRESSED`. Set `regressed_at_iteration: {current_iteration}`. Do NOT increment `fail_count` on the first regression; regression is treated as a distinct first-class signal, not a normal failure streak. Subsequent consecutive failures of the same criterion follow rules 3-4.
-3. **Verification failed AND not a regression AND `fail_count < 3`** → `FAIL`. Increment `fail_count`.
-4. **Verification failed AND `fail_count >= 3`** → `BLOCKED`.
-
-**Decision Gate impact**:
-- `REGRESSED` is treated as `FAIL` for verdict computation (verdict becomes FAIL, REPLAN triggers).
-- `REGRESSED` is NOT counted toward "DONE"; only `PASS` and `BLOCKED` count.
+Validate the returned evidence and state against [Criterion State Transitions](ralph/resources/judge-protocol.md#criterion-state-transitions), then persist the result in session memory. The judge applies the transition once; the coordinator must not increment counters or apply it again. If the result is inconsistent, return it to the judge for correction against the original snapshot.
 
 ---
 

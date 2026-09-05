@@ -4,10 +4,8 @@ description: Automated parallel agent execution that spawns CLI subagents via na
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 0 in order. Explicitly report completion of each step before proceeding.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **You MUST use MCP tools throughout the entire workflow.** This is NOT optional.
   - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `find_referencing_symbols`, `search_for_pattern`) for code exploration. Do NOT use raw grep as a substitute.
   - Use file tools (`Read`/`Write`/`Edit`) to persist coordination artifacts directly to `{memoryConfig.basePath}/` (default: `.agents/state/memories/`). Do NOT use Serena's `write_memory` for workflow session state, as verification gates require durable files on disk.
@@ -54,9 +52,9 @@ Look for a plan file:
 A missing plan is not a stop condition. `/orchestrate` creates the plan itself instead of handing the request back to the user:
 
 1. Generate the session ID now (format: `session-YYYYMMDD-HHMMSS`). Step 2 reuses this id verbatim — do not generate a second one.
-2. Read and follow `.agents/workflows/plan.md` step by step, passing this session ID as its `{sessionId}` so the artifact lands at `.agents/results/plan-{sessionId}.json`.
-3. **Do NOT skip `plan.md` Step 6 (Review Plan with User).** It is this run's approval gate — the Step 3 fan-out is authorized by it. Delegation never removes a user gate.
-4. Once the plan is saved and approved, load it and continue to Step 2 with the same session ID.
+2. Read and follow `.agents/workflows/plan.md`, passing this session ID as its `{sessionId}` and requiring an executable JSON plan even for Simple tasks. The artifact lands at `.agents/results/plan-{sessionId}.json`.
+3. Present the plan under `plan.md` Step 6 and reuse existing authorization. Ask only for a material missing decision or new authorization; delegation does not authorize work outside the request.
+4. Once the plan is saved and authorized, load it and continue to Step 2 with the same session ID.
 
 Stop and report only when the plan cannot be produced: the user declines to plan, or `plan.md` blocks because the request is too underspecified to decompose.
 

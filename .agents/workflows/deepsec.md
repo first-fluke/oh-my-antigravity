@@ -4,10 +4,8 @@ description: Drive the `oma-deepsec` skill end-to-end. Installs `.deepsec/`, cal
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **Do NOT modify product source code in this workflow.** Findings that need code edits hand off to `oma-debug` / `oma-backend` / `oma-frontend` / `oma-mobile` / `oma-tf-infra` / `oma-db` in Step 5.
 - **Read the skill before acting.** Step 1 mandates loading `.agents/skills/oma-deepsec/SKILL.md` and only the resource files needed for the resolved intent.
 - **Calibrate before any unbounded `process`.** Deepsec docs (`getting-started.md`, `vercel-setup.md`, `faq.md`) recommend `--limit 50 --concurrency 5`. Defer to a user-named value if given.
@@ -115,7 +113,7 @@ Then write `data/<id>/INFO.md` per `resources/setup.md` § 4: 50–100 lines, pr
    ```bash
    bunx deepsec process --limit 50 --concurrency 5
    ```
-3. **Report cost extrapolation**: read the calibration run's total cost, multiply by `(total_files / 50)`, present to the user with the cost-band table from `resources/scanning.md`. If the CLI reports only a per-batch cost, multiply by `(total_files / batch_size)` instead (`--batch-size` defaults to 5, so the `--limit 50` calibration runs 10 batches). Cross-check against the cost-band table before reporting. **You MUST get explicit user go-ahead before launching the unbounded `process`.**
+3. **Report cost extrapolation**: read the calibration run's total cost, multiply by `(total_files / 50)`, present to the user with the cost-band table from `resources/scanning.md`. If the CLI reports only a per-batch cost, multiply by `(total_files / batch_size)` instead (`--batch-size` defaults to 5, so the `--limit 50` calibration runs 10 batches). Cross-check against the cost-band table before reporting. **Before launching the unbounded `process`, obtain spend authorization unless an existing authorization covers the estimated scope and cost.**
 4. **Full investigation**:
    ```bash
    bunx deepsec process --concurrency 5

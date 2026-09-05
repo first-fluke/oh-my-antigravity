@@ -4,11 +4,9 @@ description: Documentation drift detection and sync via `oma-docs`. Verify mode 
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
-- **Never auto-apply sync patches.** Sync mode is always interactive: `[y]` confirm required per doc.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
+- **Sync is proposal-only unless edits are authorized.** Follow the execution policy: an explicit request to update the scoped docs authorizes those patches; otherwise present proposals and obtain authorization before applying.
 - **Never modify `.agents/` definitions.** SSOT protection covers skills, workflows, rules, agents, and config, in all modes. Generated artifacts under `.agents/results/` and `.agents/state/` are not SSOT — never delete them to "restore" protection.
 - **Follow the host-LLM contract** in `.agents/skills/oma-docs/SKILL.md`: the CLI emits structured data; this workflow performs natural-language synthesis, severity grouping, and patch drafting on top of the JSON output.
 
@@ -103,7 +101,7 @@ oma docs sync HEAD~5..HEAD --json
 oma docs sync main..feature-branch --json
 ```
 
-The CLI emits a list of `{ doc, changedFiles, matchedRefs }` entries. **Do not auto-apply anything.** Patch synthesis is your responsibility (host-LLM contract).
+The CLI emits a list of `{ doc, changedFiles, matchedRefs }` entries. Patch synthesis is your responsibility (host-LLM contract); apply patches only within the authorized edit scope.
 
 ---
 
@@ -119,7 +117,7 @@ oma docs i18n --json --min-severity MEDIUM
 oma docs lint --json
 ```
 
-Host-LLM contract: prioritize CRITICAL/HIGH drift pairs and hand each to `oma-translation` in diff-sync mode; for lint issues, restructure flagged sentences via `oma-translation` with per-file user confirmation. Never bulk-retranslate.
+Host-LLM contract: prioritize CRITICAL/HIGH drift pairs and hand each to `oma-translation` in diff-sync mode; for lint issues, restructure flagged sentences via `oma-translation` when translation edits are authorized; otherwise report proposals. Never bulk-retranslate.
 
 ---
 
@@ -145,20 +143,20 @@ For each candidate doc:
 1. Read the doc itself.
 2. Read `git diff` for the listed `changedFiles`.
 3. Draft a unified-diff patch reflecting the code change. Keep the patch minimal: only update text that the diff actually invalidates.
-4. Present each patch to the user with the prompt template:
+4. Prepare and present the patches. If scoped edits are already authorized, proceed without another approval. Otherwise use the prompt template for the unresolved patch decision:
 
    ```
    [y] apply  [n] skip  [d] show diff  [s] show full proposal
    ```
 
-5. After each `[y]` or `[n]` decision, emit and verify the required patch approval decision. Substitute the actual outcome and doc path — do not emit the literal template:
+5. Before applying or skipping each patch, emit and verify the required patch approval decision. Substitute the actual doc path, intended action, and authorization source (existing request or new choice); do not emit the literal template:
 
    ```bash
-   oma state emit "decision.made" '{"subject":"docs.sync-patch-approval","decision":"<applied|skipped>: <doc path>","rationale":"The user reviewed the proposed doc patch and chose to <apply|skip> it."}'
+   oma state emit "decision.made" '{"subject":"docs.sync-patch-approval","decision":"<apply|skip>: <doc path>","rationale":"<existing scoped edit request or new user choice authorizing this action>"}'
    oma state verify --workflow docs --checkpoint sync-patch-approval
    ```
 
-6. On `[y]`, apply via `git apply` or by writing the doc directly. After applying any patches, regenerate the index:
+6. Apply authorized patches via `git apply` or by writing the doc directly. After applying the patch batch, regenerate the index once:
 
    ```bash
    oma docs verify --json > /dev/null
@@ -196,7 +194,7 @@ Tell the user:
 ## Docs Sync Report
 - Range: <range>
 - Candidate docs: N
-- Applied patches: M (user-confirmed)
+- Applied patches: M (authorized)
 - Skipped: K (user declined or no actionable change)
 - Index regenerated: docs/generated/doc-refs.json
 ```

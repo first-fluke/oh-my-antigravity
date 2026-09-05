@@ -27,12 +27,12 @@ The judge runs as a **spawned subagent with fresh context** (see ralph.md Step 2
 
 ## Verification Methods
 
-For each criterion, execute the defined verification method:
+For each criterion requiring execution under Verification Execution Order, execute its defined method. Follow `../../../skills/_shared/core/execution-policy.md`: build, compile, and package commands require an explicit user build request; otherwise use relevant non-emitting checks when defining criteria.
 
 | Verification Type | How to Execute | PASS Condition | FAIL Condition | Cacheable |
 |-------------------|----------------|----------------|----------------|-----------|
 | `tests pass` | Run test command via Bash | Exit code 0, all tests pass | Any test failure or exit code != 0 | Yes (heavy) |
-| `build succeeds` | Run build command via Bash | Exit code 0, no errors | Build errors present | Yes (heavy) |
+| `build succeeds` | Only on an explicit user build request: run build command via Bash | Exit code 0, no errors | Build errors present | Yes (heavy) |
 | `file exists` | Check file path | File exists at specified path | File not found | No (always fast) |
 | `command output` | Run specified command | Output matches expected pattern | Output does not match | Conditional |
 | `lint passes` | Run lint command via Bash | Zero errors (warnings OK) | Any lint error | Yes (medium) |
@@ -48,24 +48,38 @@ For each criterion, execute the defined verification method:
 | Criterion | Status    | Evidence                                                         |
 |-----------|-----------|------------------------------------------------------------------|
 | C1        | PASS      | `bun test` exit 0, 13/13 passed                                  |
-| C2        | FAIL      | `bun build` exit 1, TypeError in Form.tsx:42                     |
+| C2        | FAIL      | `tsc --noEmit` exit 1, TypeError in Form.tsx:42                     |
 | C3        | BLOCKED   | Failed 3x: same import resolution error                          |
 | C4        | REGRESSED | previously PASS at iter 1 — `curl :3000/health` now timeouts; docker-compose.yml modified in iter 2 |
 
 verdict: PASS | FAIL
 ```
 
-### Status Definitions
+### Criterion State Transitions
 
-- **PASS**: Verification method executed successfully, evidence confirms criterion is met
-- **FAIL**: Verification method executed, evidence shows criterion is NOT met (and this is not a regression: either first failure or persistent failure with `previous_status != PASS`)
-- **REGRESSED**: Verification failed AND the criterion's `previous_status` was `PASS`. This is a distinct signal from FAIL, emitted exactly once on the PASS → FAIL transition. On subsequent failures, the criterion follows the normal FAIL → BLOCKED progression.
-- **BLOCKED**: Criterion has failed 3 consecutive times across iterations; no further retries
+This is the only definition of status and counter transitions. The judge applies it once per criterion to the input snapshot. Capture its current `status` as `previous_status` before computing the new state. The coordinator persists the returned state without applying the transition again.
+
+Evaluate the first matching row only:
+
+| Input / verification result | New state |
+|-----------------------------|-----------|
+| Input status is `BLOCKED` | Keep `BLOCKED` and the recorded evidence; do not retry in this session |
+| Verification passes (or a valid PASS cache applies) | Set `PASS`; reset `fail_count` to 0 and `regressed_at_iteration` to null |
+| Verification fails and input status was `PASS` | Set `REGRESSED` and `regressed_at_iteration` to the current iteration; do not increment `fail_count` on this first regression |
+| Any other verification failure | Increment `fail_count` once, then set `BLOCKED` if the updated count is >= 3 and the same root cause persists despite different approaches; otherwise set `FAIL` |
+
+`fail_count` counts consecutive non-regression verification failures since the last PASS; the first regression is a separate signal. A pass resets the streak. At `BLOCKED`, retain the failure evidence and attempted approaches and report the criterion as unresolved. A new root cause alone does not justify blocking it.
+
+Return each criterion's updated `status`, `previous_status`, `fail_count`, and `regressed_at_iteration` with the result so the coordinator can persist exactly this transition.
 
 ### Verdict Rules
 
 - `PASS`: ALL criteria are PASS or BLOCKED (no FAIL or REGRESSED remaining)
 - `FAIL`: ANY criterion has status FAIL or REGRESSED
+
+A missing criterion or a remaining PENDING status makes the JUDGE result incomplete; correct it before applying a verdict.
+
+A `PASS` verdict ends the loop; it represents full completion only when every criterion is PASS. Report partial completion whenever any criterion remains BLOCKED.
 
 ---
 
@@ -88,24 +102,7 @@ remaining:
 - Be specific: "Fix TypeError in Form.tsx:42, `props.onChange` is undefined" not "fix the error"
 - Reference exact files and line numbers when available
 - If the same failure recurred, suggest a DIFFERENT approach than the previous iteration
-- If approaching BLOCKED threshold (fail_count = 2), flag it:
-  `Next failure will BLOCK this criterion`
-
----
-
-## BLOCKED Marking Rules
-
-A criterion is marked BLOCKED when:
-
-1. It has `fail_count >= 3` (failed in 3 consecutive iterations)
-2. The same root cause persists despite different approaches
-
-`fail_count` counts **consecutive** failures only: it resets to 0 whenever the criterion passes. An intermittently flaky verification therefore cannot accumulate to BLOCKED across non-consecutive failures — recurring flakiness surfaces as repeated REGRESSED signals instead, which is the correct signal for REPLAN to investigate.
-
-When marking BLOCKED:
-- Record the 3 failure evidences for reference
-- Do NOT retry in subsequent iterations
-- Report in the final summary as unresolved
+- If the next failure would meet the BLOCKED conditions in Criterion State Transitions, flag that consequence with the supporting failure history.
 
 ---
 
@@ -113,7 +110,7 @@ When marking BLOCKED:
 
 1. Run all verification commands in parallel when possible
 2. Collect all results before producing the JUDGE result
-3. Do NOT stop at the first failure; verify ALL criteria every iteration (including criteria with `previous_status == PASS`)
+3. Do NOT stop at the first failure. Evaluate every criterion, including prior PASS criteria, under Criterion State Transitions and the cache rules below. Carry BLOCKED criteria forward with their recorded evidence without retrying.
 4. Record raw command output as evidence (not summaries)
 
 ---
@@ -126,22 +123,7 @@ A regression is detected when a criterion that was `PASS` in an earlier iteratio
 
 Ralph's EXEC phase delegates implementation to ultrawork, which freely modifies shared code (utilities, configs, migrations, dependencies). A PASS in iteration N can be silently invalidated by a change ultrawork makes while fixing other criteria in iteration N+1. Re-verifying every criterion every iteration, and labeling PASS → FAIL transitions explicitly, closes this gap.
 
-### Detection rule
-
-```
-For each criterion in current iteration:
-  if verification_failed AND previous_status == "PASS":
-    status := REGRESSED
-    regressed_at_iteration := current_iteration
-    # do NOT increment fail_count on the first regression
-  elif verification_failed:
-    fail_count += 1
-    status := BLOCKED if fail_count >= 3 else FAIL
-  else:
-    status := PASS
-    fail_count := 0                 # consecutive semantics: a pass breaks the failure streak
-    regressed_at_iteration := null
-```
+The PASS-to-REGRESSED transition is defined in Criterion State Transitions above.
 
 ### Evidence to capture for REGRESSED
 

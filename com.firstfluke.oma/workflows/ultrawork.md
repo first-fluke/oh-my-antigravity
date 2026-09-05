@@ -4,10 +4,8 @@ description: Ultrawork - high-quality 5-phase development workflow with 12 revie
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 0 in order. Explicitly report completion of each step to the user before proceeding to the next.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **You MUST use MCP tools throughout the entire workflow.** This is NOT optional.
   - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `find_referencing_symbols`, `search_for_pattern`) for code exploration. Do NOT use raw grep as a substitute.
   - Use file tools (`Read`/`Write`/`Edit`) to persist coordination artifacts directly to `{memoryConfig.basePath}/` (default: `.agents/state/memories/`). Do NOT use Serena's `write_memory` for workflow session state, as verification gates require durable files on disk.
@@ -96,17 +94,14 @@ Dispatch each of Steps 2, 3, 4 as a **separate fresh isolated reviewer subagent*
 - **Executed by a fresh isolated reviewer subagent (CCR)**: Check for unnecessary complexity (MVP focus).
 
 ### PLAN_GATE
-- [ ] Plan documented
-- [ ] Assumptions listed
-- [ ] Alternatives considered
-- [ ] Over-engineering review done
-- [ ] **User confirmation**
+
+Evaluate [the canonical PLAN_GATE](ultrawork/resources/phase-gates.md#plan_gate).
 
 **On gate pass**:
 1. Use memory edit tool to record phase completion in `session-ultrawork.md`.
-2. Emit the required L1 decision:
+2. Emit the required L1 decision, replacing the rationale placeholder with the actual authorization and gate evidence:
    ```bash
-   oma state emit "decision.made" '{"subject":"ultrawork.plan-approved","decision":"Proceed with the approved PLAN output.","rationale":"PLAN_GATE passed and the user confirmed scope."}'
+   oma state emit "decision.made" '{"subject":"ultrawork.plan-approved","decision":"Proceed with the approved PLAN output.","rationale":"<scope authorization from the existing request or a newly resolved decision; PLAN_GATE evidence>"}'
    ```
 3. Verify the required decision before Phase 2:
    ```bash
@@ -178,10 +173,8 @@ If automated measurement is available (tests, lint exist):
 If no measurement tools: skip; gates fall back to binary checklist.
 
 ### IMPL_GATE
-- [ ] Build succeeds
-- [ ] Tests pass
-- [ ] Only planned files modified
-- [ ] (If measured) Baseline Quality Score recorded in Experiment Ledger
+
+Evaluate [the canonical IMPL_GATE](ultrawork/resources/phase-gates.md#impl_gate).
 
 **On gate pass**: Use memory edit tool to record phase completion in `session-ultrawork.md`
 
@@ -241,11 +234,8 @@ If baseline was measured at Step 5.2:
 3. Record as experiment in Experiment Ledger via memory tools
 
 ### VERIFY_GATE
-- [ ] Implementation = Requirements
-- [ ] CRITICAL count: 0
-- [ ] HIGH count: 0
-- [ ] No regressions
-- [ ] (If measured) Quality Score >= 75 (Grade B)
+
+Evaluate [the canonical VERIFY_GATE](ultrawork/resources/phase-gates.md#verify_gate).
 
 **On gate pass**: Use memory edit tool to record phase completion in `session-ultrawork.md`
 
@@ -332,15 +322,12 @@ oma agent spawn refactor-engineer "Execute Phase 4 refactor actions. Step 9: Spl
 If baseline was measured at Step 5.2:
 1. Measure Quality Score after refinement
 2. Calculate delta from Post-VERIFY score
-3. **If delta < -5**: Apply Discard rule. Revert refinement changes, record in Experiment Ledger.
+3. Apply the score recovery rule in [REFINE_GATE](ultrawork/resources/phase-gates.md#refine_gate).
 4. Record kept experiments in Experiment Ledger
 
 ### REFINE_GATE
-- [ ] No large files/functions
-- [ ] Integration opportunities captured
-- [ ] Side effects verified
-- [ ] Code cleaned
-- [ ] (If measured) Quality Score >= Post-VERIFY score (no regression from refinement)
+
+Evaluate [the canonical REFINE_GATE](ultrawork/resources/phase-gates.md#refine_gate).
 
 **On gate pass**:
 1. Use memory edit tool to record phase completion in `session-ultrawork.md`.
@@ -358,7 +345,7 @@ If baseline was measured at Step 5.2:
 >
 > If neither condition is met, re-spawn the Refactor Agent with specific issues and repeat until GATE passes.
 
-**Skip conditions**: Simple tasks < 50 lines
+**Skip handling**: Apply the canonical REFINE_GATE skip conditions and record the reason in `session-ultrawork.md`.
 
 ---
 
@@ -428,14 +415,8 @@ If Quality Score was measured during this session:
    → "QA tuning suggested. Run `oma retro` to review."
 
 ### SHIP_GATE
-- [ ] Quality checks pass
-- [ ] Test coverage >= 80% (per `phase-gates.md` SHIP_GATE)
-- [ ] UX verified
-- [ ] Related issues resolved
-- [ ] Deployment checklist complete
-- [ ] (If measured) Final Quality Score >= 75 (Grade B) with non-negative delta from baseline
-- [ ] (If measured) Experiment Ledger summary recorded
-- [ ] **User final approval**
+
+Evaluate [the canonical SHIP_GATE](ultrawork/resources/phase-gates.md#ship_gate).
 
 **On gate pass**: Use memory write tool to record final results in `session-ultrawork.md`
 

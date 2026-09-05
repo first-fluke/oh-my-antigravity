@@ -4,10 +4,8 @@ description: Auto-detect project tech stack and generate stack-specific referenc
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **This workflow is slash-invoked only** (`/stack-set`). It is NOT triggered by keyword detection.
 - **Read manifests BEFORE generating.** Never fabricate stack values that were not detected.
 
@@ -97,11 +95,13 @@ After scanning all tables, record every domain that has at least one detected ma
 
 ---
 
-## Step 2: Confirm
+## Step 2: Resolve Target & Present Detection
+
+Reuse domains and stack choices already specified by the user. Present detected values for review; ask only about a material ambiguity, an unresolved target domain, or an overwrite outside the requested scope. The prompts below are for those unresolved cases.
 
 ### Single-domain: backend
 
-Present detection results and ask for confirmation:
+Present detection results; ask for correction only if a material value remains unresolved:
 ```
 Detected backend stack:
   Language: {language}
@@ -116,7 +116,7 @@ Correct? (Y/n) or modify:
 
 ### Single-domain: frontend (Angular)
 
-Present detection results and ask for confirmation:
+Present detection results; ask for correction only if a material value remains unresolved:
 ```
 Detected frontend stack:
   Framework: Angular {version}
@@ -133,7 +133,7 @@ For React / Next.js / Vue / Svelte detection, present an equivalent confirmation
 
 ### Single-domain: mobile (Swift)
 
-Present detection results and ask for confirmation:
+Present detection results; ask for correction only if a material value remains unresolved:
 ```
 Detected mobile stack:
   Language: {language}        (e.g. Swift)
@@ -150,7 +150,7 @@ For Flutter or React Native mobile detection, present an equivalent confirmation
 
 ### Multi-domain: present choice first
 
-When more than one domain was detected in Step 1, **before** showing any per-domain confirm block, ask:
+When more than one domain was detected in Step 1 and the request does not identify which domains to configure, ask:
 
 ```
 Multiple domains detected in this repo:
@@ -163,7 +163,7 @@ Generate stack references for: [all / backend / frontend / mobile]
 
 (List only the domains actually detected.)
 
-After the user selects, show the per-domain confirmation block(s) for the chosen domain(s) and confirm each before generating.
+Once the target domains are resolved, show their detected values together and generate within the authorized scope. Do not request a separate approval for each domain.
 
 ---
 
@@ -335,7 +335,7 @@ detected_from:
 verify:                      # consumed by `oma verify mobile` (see _shared/core/stack-verify.schema.json)
   detect: Package.swift
   syntax:
-    cmd: "swift build"
+    cmd: "{non_emitting_syntax_check_cmd}" # detected project command; do not default to swift build
     skip_if_missing: "swift"
   tests:
     cmd: "swift test"
@@ -378,7 +378,7 @@ Seed from `.agents/skills/oma-mobile/variants/flutter/` or `.agents/skills/oma-m
 
 ## Step 4: Verify
 
-Confirm generated files meet requirements.
+Confirm generated files meet requirements. Verification commands must follow the execution policy: use detected non-emitting checks, and include build/compile/package commands only when explicitly requested. If no suitable non-emitting check is available, report that limitation instead of substituting a build.
 
 ### Backend checks
 - [ ] `stack.yaml` has `language`, `framework`, `orm`, `validation` fields
@@ -417,5 +417,5 @@ Confirm generated files meet requirements.
 - Do NOT modify `.agents/skills/{target_skill}/SKILL.md` (abstract interface is protected)
 - Do NOT modify `resources/` common files under any skill
 - Only create or modify files in the resolved skill's `stack/` directory
-- If `stack/` already exists for the resolved domain skill, ask before overwriting
+- If `stack/` already exists, preserve unrelated content; ask before overwriting only when replacement is outside the authorized scope
 - `target_skill` is always the resolved domain skill (`oma-backend`, `oma-mobile`, or the resolved frontend skill — `angular-developer` / `oma-frontend`); never hardcode a single skill name in generation logic

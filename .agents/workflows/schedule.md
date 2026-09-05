@@ -4,10 +4,8 @@ description: Register a scheduled agent job from a natural-language schedule req
 disable-model-invocation: true
 ---
 
-# MANDATORY RULES: VIOLATION IS FORBIDDEN
-
 - **Response language follows `language` setting in `.agents/oma-config.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
+- Follow `.agents/skills/_shared/core/execution-policy.md` for authorization, clarification, verification, and completion. Execute required steps on the selected path in dependency order; apply documented branch and skip conditions.
 - **This workflow is slash-invoked only** (`/schedule`). It is NOT triggered by broad keyword detection.
 
 ---
