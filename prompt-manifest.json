@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "14.0.2",
-  "releaseDate": "2026-09-05T13:45:59.305Z",
+  "releaseDate": "2026-09-05T23:57:02.311Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -1991,123 +1991,123 @@
     },
     {
       "path": ".agents/workflows/architecture.md",
-      "sha256": "71312c21470cb298b87ff766b295cdc76ecfd5e75945464e80ec873828a4d754",
-      "size": 6477
+      "sha256": "cf16c8a2d064a81b98efc7f1d3d29c0b798671474274e5f734aa225e7caf5aad",
+      "size": 6613
     },
     {
       "path": ".agents/workflows/brainstorm.md",
-      "sha256": "9f37d8ec80e50f084bcf31d6f11fbe32223a463a064ba957b14a58baf528aac2",
-      "size": 10122
+      "sha256": "2861048b4a3f78c835880645b8d3af0b8ced3d8b3e2292e648afa634998035f2",
+      "size": 10510
     },
     {
       "path": ".agents/workflows/convert.md",
-      "sha256": "42d546979c1073ce46a52b0737d6ae923b8b54a09f0134e7b78105d59e79bf71",
-      "size": 9140
+      "sha256": "d18d2cd33e28e30278a1232368159fe2e93e84037888f80e0cb030d8812e4a10",
+      "size": 9276
     },
     {
       "path": ".agents/workflows/debug.md",
-      "sha256": "e5c9c1cf23a7b155f8da95a5a30eb734c6e2a3eec53641781f41d0e6684055f6",
-      "size": 4904
+      "sha256": "c612bab29b05495dbcb07a5a3662077e09e2b061f8e1c4c1dbc93f0aa3be9e6a",
+      "size": 5040
     },
     {
       "path": ".agents/workflows/deepinit.md",
-      "sha256": "aaf6697ec810588312cfacc18844e069283f9d2d5dd93535c2d6c7e5a0bbfc7a",
-      "size": 14733
+      "sha256": "50bc20f748707615737a421b5720ed4325442bfb2beae8bd3e899e557705d605",
+      "size": 14808
     },
     {
       "path": ".agents/workflows/deepsec.md",
-      "sha256": "0dda5c95b515da7147c16cf230dd13163e5e5c997016f11fa8f09fb0da4df8c7",
-      "size": 12996
+      "sha256": "7c680af8ebe436234e176e415cc7961b7d7958ad4db390aa645f3fc6acdad6a4",
+      "size": 13193
     },
     {
       "path": ".agents/workflows/design.md",
-      "sha256": "07389c6501bce52d45665b488277c70463dbc65b8f097ecd4a6e421ee2cb2818",
-      "size": 7166
+      "sha256": "d3bbfa6c9d205125b7e6337ea4a3f31bcde660ee90e075f93c3184c40bba172c",
+      "size": 7351
     },
     {
       "path": ".agents/workflows/docs.md",
-      "sha256": "1522b3677385a84c8f7e0d8facad963ef5fcbff1be35ad9ef66e145b1520a0c8",
-      "size": 9154
+      "sha256": "c9a4a7f75e4ad070f300a640560b6daf939315fcc46c974451e41e15179bfa13",
+      "size": 9667
     },
     {
       "path": ".agents/workflows/explain.md",
-      "sha256": "9113a2902dda90ff1e427cc6ba47ff54e0430f52ecb7dd22da5bf65d42804a25",
-      "size": 5733
+      "sha256": "c354dc811f2a3e4bf7dd086220807e6991ef44b95645119150b34e9b399bb2ce",
+      "size": 5869
     },
     {
       "path": ".agents/workflows/orchestrate.md",
-      "sha256": "4d39a2c004bf30ec89ac5a25705e7f84e98c507186626e1d10d89c696207d042",
-      "size": 14248
+      "sha256": "1e5cba667c9c87aae72dfd20b1d2165b4eb189d59ed0f2f037f1e276ac1d9924",
+      "size": 14392
     },
     {
       "path": ".agents/workflows/plan.md",
-      "sha256": "27c2ea6b8e9ea6a592033f1c02c08893b5d9f3e00f6394bfe3fc2e6d899227c7",
-      "size": 10730
+      "sha256": "7ea28b7cd164c12f257c9f45f7af7288cedf678a40006a274e525886ddab7182",
+      "size": 11334
     },
     {
       "path": ".agents/workflows/ralph/resources/judge-protocol.md",
-      "sha256": "bde2de7ff70de24c419368a6ff17dee88dd479c7a40d44f1ec824cdc1632b9f0",
-      "size": 9577
+      "sha256": "2f00cf43d77d0a2876b5549d9711781e808d7cb8bd3960bc14e031513dd1956a",
+      "size": 10096
     },
     {
       "path": ".agents/workflows/ralph.md",
-      "sha256": "8a932b8a5f9f37c364e4e90d4ca57e4073ce5cc1526608e807a2b725c3170c3d",
-      "size": 19927
+      "sha256": "08cc307586d640d0b0d906efc6e6769f0d2eec2fcb45e4a4aa325965e14b87cc",
+      "size": 18192
     },
     {
       "path": ".agents/workflows/recap.md",
-      "sha256": "995ef6f31c84722fa3b4fcb86211e8c94cca7ccacd4d0c1b098e269791678277",
-      "size": 5611
+      "sha256": "77afc537e1a17856bf6c2731be838daf0204bfaa702faf8d3e847a712546d26d",
+      "size": 5747
     },
     {
       "path": ".agents/workflows/review.md",
-      "sha256": "51ef190241fd5ba17de592ba706293699ce0c45a943e3de9d2c5e9e1efb3f1a6",
-      "size": 5752
+      "sha256": "6d98b44733c8b1e1dbc0434be8a79bf89f105046176c66c9a17ba3dc5f765234",
+      "size": 5888
     },
     {
       "path": ".agents/workflows/schedule.md",
-      "sha256": "efb8b7d2d8348e270a11b23bc0b1c6d6b6e4acd2857ecd7606344cb9b44aa8f7",
-      "size": 3379
+      "sha256": "e607f721445a08346a1045ddf9dbf6c65105b0c9ee4c582e48fa7e6893b0a4bb",
+      "size": 3515
     },
     {
       "path": ".agents/workflows/scm.md",
-      "sha256": "ca1a09911665c669550e66972c066f794d1d232206ad4fbb4aeb06dfd02dcef2",
-      "size": 8733
+      "sha256": "fdd310c3056a1ab15462667d4a296afe9371f4513911d82bd51fdfbb2392327f",
+      "size": 8869
     },
     {
       "path": ".agents/workflows/stack-set.md",
-      "sha256": "a1dc7031bf64a5dc5c010b072e384e49c837ef96b2802a08060db47f89da32cb",
-      "size": 20980
+      "sha256": "47ca7792969efd88e17aaf1955347058b6cdc4e1ec88609c5083de396a0a2bfe",
+      "size": 21973
     },
     {
       "path": ".agents/workflows/tools.md",
-      "sha256": "169aa63cf371128c7b8bddd2f0d7b1ca9cf2feb17b147ddb73e885d3bf86d240",
-      "size": 3821
+      "sha256": "e2b16e19c1e01aca3aee88fe1abd043e39add210530007676a6f5adaf08c82b7",
+      "size": 4693
     },
     {
       "path": ".agents/workflows/ultrawork/resources/multi-review-protocol.md",
-      "sha256": "d23219f7c5bdbf6bbce0893233a45d9337f9e3dc70c7c65cad91b4cd10fca08e",
-      "size": 5007
+      "sha256": "9a269608e6a3505b3ccf5930f32f139bca90a98a81769c45b94f664723203ec7",
+      "size": 5099
     },
     {
       "path": ".agents/workflows/ultrawork/resources/phase-gates.md",
-      "sha256": "da037ee69d687885145734fdd98bff1392850c4fa7a44d214a0b5ed2c7559fa8",
-      "size": 4351
+      "sha256": "912ca298f2ec60142b6b924453a9c5751bcd57955e7ed339bb429e8401b3d51f",
+      "size": 5969
     },
     {
       "path": ".agents/workflows/ultrawork.md",
-      "sha256": "eae421eb8f143277222db8d145617eb3956be107e236c0d5413497987b06709c",
-      "size": 32159
+      "sha256": "b391a8ce67b3ff68c2fca944ef0cadc479c974419a319e43dec66036690e5066",
+      "size": 31849
     },
     {
       "path": ".agents/workflows/video.md",
-      "sha256": "b177d15b8285926ebdeccf25d5c67c46a82d67ea9e85d4f93d9bd46d191b053a",
-      "size": 23552
+      "sha256": "9829bd3b43e7eedddde3db2bc5e85ca0d9ac9212ed7307bbbb148f721d5b4977",
+      "size": 23850
     },
     {
       "path": ".agents/workflows/work.md",
-      "sha256": "9e57d1bc6089a04fe717441588becaa4838da80ca46baf098a0985529fc81686",
-      "size": 10037
+      "sha256": "e7342b3846d08bf35364340a6237859354e216f8a5e72b9b1619dcb800fe36ee",
+      "size": 10088
     }
   ],
   "checksums": {
