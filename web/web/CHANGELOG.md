@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.0](https://github.com/first-fluke/oh-my-agent/compare/web-v6.0.1...web-v6.1.0) (2026-09-06)
+
+
+### Features
+
+* **config:** add CUE support and automatic vendor model selection ([b3e38e9](https://github.com/first-fluke/oh-my-agent/commit/b3e38e9d3802211c00b73f16b90264b578e81fb4))
+
 ## [6.0.1](https://github.com/first-fluke/oh-my-agent/compare/web-v6.0.0...web-v6.0.1) (2026-09-06)
 
 
