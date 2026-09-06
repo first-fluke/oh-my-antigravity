@@ -11,7 +11,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as cue from "../utils/cue.js";
 import {
   CO_AUTHORS_ALLOW_FILE,
   ensureCoAuthorGuardHook,
@@ -67,6 +68,7 @@ function tryCommit(
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   for (const dir of created.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -233,23 +235,38 @@ describe("the installed hook, enforced by git", () => {
     expect(status).toBe(0);
   });
 
-  it("accepts the address configured in oma-config.cue", () => {
+  it.each([
+    'scm: co_author: {\n  enabled: true\n  email: "cue-bot@example.com"\n  enforce_hook: true\n}',
+    'scm: {\n  co_author: {\n    enabled: true\n    email: "cue-bot@example.com"\n    enforce_hook: true\n  }\n}',
+  ])("accepts CUE co-author configuration: %s", (config) => {
+    vi.spyOn(cue, "evaluateCueFile").mockReturnValue({
+      success: true,
+      data: {
+        scm: {
+          co_author: {
+            enabled: true,
+            email: "cue-bot@example.com",
+            enforce_hook: true,
+          },
+        },
+      },
+    });
     const repo = makeRepo();
     const agentsDir = join(repo, ".agents");
     mkdirSync(agentsDir, { recursive: true });
     writeFileSync(
       join(agentsDir, "oma-config.cue"),
-      `package config\nscm: co_author: {\n  enabled: true\n  email: "cue-bot@example.com"\n  enforce_hook: true\n}\n`,
+      `package config\n${config}\n`,
     );
-    ensureCoAuthorGuardHook(repo);
+    expect(ensureCoAuthorGuardHook(repo).status).toBe("written");
 
-    const { status } = tryCommit(
+    const { status, stderr } = tryCommit(
       repo,
       "c.txt",
       "feat: thing\n\nCo-Authored-By: Bot <cue-bot@example.com>",
     );
 
-    expect(status).toBe(0);
+    expect(status, stderr).toBe(0);
   });
 
   it("accepts an address listed in the allowlist", () => {

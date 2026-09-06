@@ -83,7 +83,7 @@ allowed=$(
 		fi
 
 		if [ -n "$config_file" ]; then
-			grep -A 5 '^[[:space:]]*co_author:' "$config_file" |
+			grep -E -A 5 '^[[:space:]]*(scm:[[:space:]]*)?co_author:' "$config_file" |
 				grep -E '^[[:space:]]*email:' |
 				sed -e 's/.*email:[[:space:]]*//' -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\\$//"
 		fi
