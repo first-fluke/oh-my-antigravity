@@ -1,5 +1,23 @@
 # Changelog
 
+## [14.3.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.2.0...cli-v14.3.0) (2026-09-06)
+
+
+### Features
+
+* **config:** add CUE support and automatic vendor model selection ([b3e38e9](https://github.com/first-fluke/oh-my-agent/commit/b3e38e9d3802211c00b73f16b90264b578e81fb4))
+
+
+### Bug Fixes
+
+* **ci:** isolate time-window tests from CUE availability ([b7cdb6a](https://github.com/first-fluke/oh-my-agent/commit/b7cdb6a9df6c9dee5f31dc2f963ac847662a531e))
+* **scm:** accept compact CUE co-author configuration ([56e1974](https://github.com/first-fluke/oh-my-agent/commit/56e1974b4a86519ca04ed319c6df7430fb264742))
+
+
+### Documentation
+
+* **agents:** prefer asynchronous clarification and approval questions ([3b65393](https://github.com/first-fluke/oh-my-agent/commit/3b6539375bbb79f92990cfc71713b6f89b0a126d))
+
 ## [14.2.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.1.0...cli-v14.2.0) (2026-09-06)
 
 
