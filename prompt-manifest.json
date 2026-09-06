@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "14.3.0",
-  "releaseDate": "2026-09-06T10:54:58.320Z",
+  "releaseDate": "2026-09-06T15:03:45.767Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -146,13 +146,13 @@
     },
     {
       "path": ".agents/hooks/core/inject-log.ts",
-      "sha256": "cfb81db08ae56b12395aea6f935896fe0af085a2f9b62f0bf1d0a64cc64d6a46",
-      "size": 4804
+      "sha256": "1a2d8d128156409cb0ee1fe1da9b118e8d43048b027850e60594c2e5458d8ea7",
+      "size": 5111
     },
     {
       "path": ".agents/hooks/core/keyword-detector.ts",
-      "sha256": "2752d63e93986c8618f0272767613d1c9c9b763b21f425c1cb7a7cc8f5667a9f",
-      "size": 42976
+      "sha256": "fe3a18488ec71778b34e24ffb1e08ba67fdca1410eb8f8e86273171290b1fed0",
+      "size": 42971
     },
     {
       "path": ".agents/hooks/core/memory-adapter.ts",
@@ -185,6 +185,11 @@
       "size": 7671
     },
     {
+      "path": ".agents/hooks/core/session-storage.ts",
+      "sha256": "22538da677399b187c6414acee2f29521630c5eab90527d75500e79bdb037bcc",
+      "size": 7138
+    },
+    {
       "path": ".agents/hooks/core/skill-injector.ts",
       "sha256": "8b7b08c0c6e1a151cafeae569011385defe5ef3d1260bbdd6c3e7d13de246a2e",
       "size": 17825
@@ -196,18 +201,18 @@
     },
     {
       "path": ".agents/hooks/core/state-core.ts",
-      "sha256": "af27653d29a199a06c2008f85bace67d37d445bb65dd4ee412a664854bf3ef3e",
-      "size": 9854
+      "sha256": "7d8a7fe27c1c297157c5ee4ea1256030806da15d32c1781b2871293c31d28847",
+      "size": 10501
     },
     {
       "path": ".agents/hooks/core/state-emit.ts",
-      "sha256": "38ea836d4bb4e86869fe4262268ac1599d30453ad4da691d47d2cb19052f4c8e",
-      "size": 1047
+      "sha256": "5bae3c40f2c91acef935833395d5b94d1511a6d2fc76c8ae623be87ae62e6f9f",
+      "size": 1066
     },
     {
       "path": ".agents/hooks/core/state-index-lock.ts",
-      "sha256": "014f695a93e2c6d55666def70257e551661588809d2e62f528d8946f8c5db8dc",
-      "size": 3526
+      "sha256": "5316b944b5fdcde5eb7a0f213c40b95092abee1641a18acb539ad0be31b02272",
+      "size": 4163
     },
     {
       "path": ".agents/hooks/core/state-marker.ts",
@@ -2126,6 +2131,6 @@
   "metadata": {
     "skillCount": 33,
     "workflowCount": 24,
-    "totalFiles": 423
+    "totalFiles": 424
   }
 }
