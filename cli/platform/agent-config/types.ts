@@ -128,6 +128,7 @@ export type SkillOverrideSection = Record<string, unknown>;
 export interface OmaConfig {
   providers?: import("../../utils/providers.js").ProvidersConfig;
   honcho?: import("../../utils/providers.js").HonchoConfig;
+  brave?: import("../../utils/providers.js").BraveConfig;
   language: string;
   /** Built-in preset key or custom_presets key */
   model_preset: string;

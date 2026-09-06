@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as p from "@clack/prompts";
 import { isMap, parseDocument } from "yaml";
+import { createSearchProviderRegistry } from "../../platform/search-providers.js";
 import {
   type HonchoConfig,
   HonchoConfigSchema,
@@ -10,6 +11,7 @@ import {
 } from "../../utils/providers.js";
 
 export type ProviderInstallOptions = {
+  webSearch?: string;
   codeIntelligence?: "serena" | "gortex";
   semanticMemory?: "agentmemory" | "honcho" | "none";
   honchoUrl?: string;
@@ -18,7 +20,7 @@ export type ProviderInstallOptions = {
 
 export type ProviderSelection = {
   providers: Required<
-    Pick<ProvidersConfig, "code_intelligence" | "semantic_memory">
+    Pick<ProvidersConfig, "code_intelligence" | "semantic_memory" | "web">
   >;
   honcho?: HonchoConfig;
 };
@@ -50,17 +52,21 @@ export async function promptProviders(
     readMapping(doc.get("providers", true)),
   );
   const explicit = ProvidersSchema.parse({
+    web: options.webSearch,
     code_intelligence: options.codeIntelligence,
     semantic_memory: options.semanticMemory,
   });
   const chosen: ProviderSelection = {
     providers: {
+      web: explicit.web ?? existing.web ?? "native",
       code_intelligence:
         explicit.code_intelligence ?? existing.code_intelligence ?? "serena",
       semantic_memory:
         explicit.semantic_memory ?? existing.semantic_memory ?? "agentmemory",
     },
   };
+  const searchRegistry = createSearchProviderRegistry();
+  if (explicit.web) searchRegistry.resolve(explicit.web, "web");
   const uncancel = <T>(value: T | symbol): T => {
     if (p.isCancel(value)) {
       cleanup();
@@ -111,6 +117,29 @@ export async function promptProviders(
             hint: "keep only local workflow evidence",
           },
         ],
+      }),
+    );
+  }
+  if (!nonInteractive && !explicit.web) {
+    const choices = searchRegistry.list("web").map((provider) => ({
+      value: provider.id,
+      label: provider.label,
+      hint:
+        provider.id === "native"
+          ? "default — use the agent's native search"
+          : "requires an API key",
+    }));
+    if (!choices.some((choice) => choice.value === chosen.providers.web))
+      choices.push({
+        value: chosen.providers.web,
+        label: chosen.providers.web,
+        hint: "saved provider — not registered",
+      });
+    chosen.providers.web = uncancel(
+      await p.select({
+        message: "Web search provider?",
+        initialValue: chosen.providers.web,
+        options: choices,
       }),
     );
   }
@@ -180,6 +209,10 @@ export function saveProviders(
 }
 
 export function reportProviderSetup(selection: ProviderSelection): void {
+  if (selection.providers.web === "brave")
+    p.log.info(
+      'Brave Search selected. Set BRAVE_SEARCH_API_KEY or run `oma vault store brave-search` for hidden key input. Test with `oma search web "your query"`; `oma doctor` checks credential availability without making a search request.',
+    );
   if (selection.providers.code_intelligence === "gortex")
     p.log.info(
       "Gortex selected. Install the latest Gortex separately and choose repositories to track; then run `oma doctor`. Serena setup was skipped.",

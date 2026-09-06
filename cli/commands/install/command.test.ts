@@ -91,4 +91,16 @@ describe("install command --yes flag", () => {
     ).rejects.toThrow();
     expect(installMock).not.toHaveBeenCalled();
   });
+
+  it("passes Brave web selection to the installer", async () => {
+    await makeProgram().parseAsync([
+      "node",
+      "oma",
+      "install",
+      "--yes",
+      "--web-search",
+      "brave",
+    ]);
+    expect(installMock).toHaveBeenCalledWith({ yes: true, webSearch: "brave" });
+  });
 });

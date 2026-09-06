@@ -7,6 +7,7 @@ keep Context7, Serena, and the existing optional AgentMemory behavior.
 | Capability | Default | Alternatives | Fallback |
 | --- | --- | --- | --- |
 | Documentation | Context7 | — | Official documentation through web search |
+| General web search | Runtime native search | Brave Search | Explicit failure; no automatic provider switch |
 | Code intelligence | Serena | Gortex (experimental) | Native search/read |
 | Semantic memory | AgentMemory | Honcho (experimental), `none` | Local evidence only |
 | Coordination and verification | `.agents/state/` | — | No external memory dependency |
@@ -15,7 +16,8 @@ keep Context7, Serena, and the existing optional AgentMemory behavior.
 
 `oma install` offers a code-intelligence choice (Serena or Gortex) and a semantic
 memory choice (Agent Memory, Honcho, or none). Fresh installs default to **Serena
-and Agent Memory**; reinstalling retains saved choices. For unattended installs:
+and Agent Memory**. Web search offers Native (default) or Brave Search;
+reinstalling retains saved choices. For unattended installs:
 
 ```sh
 oma install --yes --code-intelligence gortex --semantic-memory honcho \
@@ -38,6 +40,7 @@ configuration source. Omit any field to retain its default.
 ```yaml
 providers:
   docs: context7
+  web: native
   code_intelligence: gortex
   semantic_memory: honcho
 
@@ -74,6 +77,110 @@ oma memory status
 Run `oma link` after changing providers, including when reverting to defaults.
 There is no automatic Gortex/Honcho installation, service deployment, or repository
 tracking in this integration.
+
+## Search provider extension interface
+
+Search integrations share the `SearchProviderDefinition` and
+`SearchProviderAdapter` contracts in `cli/types/search-provider.ts`. The explicit,
+instance-scoped `SearchProviderRegistry` lives in `cli/platform/search-providers.ts`.
+An integration registers a unique ID, supported capabilities (`web`, `docs`,
+`contents`, `research`), transport (`runtime`, `mcp`, `api`), and authentication
+metadata. API credentials are resolved lazily through the supplied context;
+provider metadata contains environment variable names, not secret values.
+
+Adapters implement read-only `status(context)` and `execute(request, context)`.
+Requests retain capability-specific inputs, including library/version for docs
+and URLs for content reads. Responses retain source URLs, titles, excerpts,
+provider/capability provenance, and optional vendor-specific `extensions`.
+The execution boundary rejects unsupported capabilities and mismatched provenance,
+propagates cancellation, and bounds waiting by the caller's abort signal. Adapters
+must also propagate the signal to their own I/O so cancelled work actually stops.
+There is no implicit fallback, plugin discovery, installation, or MCP projection.
+
+Inspect the shipped registry and current selection without network calls:
+
+```sh
+oma search providers --pretty
+```
+
+Currently, `native` declares runtime-managed web search and `context7` declares
+runtime-managed MCP documentation search. Neither has a CLI execution adapter;
+`runtime-managed` does not certify that the active agent has a connected search
+tool. Registration likewise does not certify credential validity or reachability.
+Brave has a CLI execution adapter for `web`. The existing URL-fetch and platform
+API search commands retain their existing behavior.
+
+`providers.web` defaults to `native` and accepts a provider ID. The registry checks
+whether that ID is registered and supports web search; `oma search providers`
+returns a nonzero exit status for missing or incompatible selections, and
+`oma doctor` reports them. `providers.docs` remains restricted to Context7 until
+another documentation integration is wired through configuration and routing.
+
+You.com is not implemented or offered during installation. To add another provider,
+implement its adapter and register its definition in
+`createSearchProviderRegistry()`, then connect the execution/MCP route and installer
+credential configuration. Only advertise capabilities the adapter actually supports.
+Setting `web: you` reports `unregistered`. Registry tests use a synthetic adapter to verify dispatch,
+capability checks, cancellation, provenance, and registration isolation.
+
+## Brave Search
+
+Brave uses the official [Web Search API](https://api-dashboard.search.brave.com/api-reference/web/search/get)
+directly from the CLI; no browser, extra MCP server, or SDK package is required.
+Only general web search is registered. Page reads continue through
+`oma search fetch <url>`; documentation searches use Context7.
+
+Select Brave during `oma install`, or pass `--web-search brave`. Alternatively,
+set the following through your configuration source and run `oma link` to update
+agent instructions:
+
+```yaml
+providers:
+  web: brave
+
+# Optional credential references; these are the defaults, not key values.
+brave:
+  api_key_env: BRAVE_SEARCH_API_KEY
+  api_key_vault: brave-search
+```
+
+Provide `BRAVE_SEARCH_API_KEY` in the environment, or use hidden input to store
+the key in the OS keychain:
+
+```sh
+oma vault store brave-search
+oma search web "TypeScript release notes" --limit 5 --pretty
+
+# Override the provider for one request without changing the configuration.
+oma search web "TypeScript release notes" --provider brave --pretty
+```
+
+A nonempty environment value takes precedence over the configured vault entry.
+The API key is sent only in the `X-Subscription-Token` header to
+`https://api.search.brave.com/res/v1/web/search`; redirects are rejected.
+Actual keys are never written to project YAML by this integration. The existing
+vault command owns key storage; the installer displays its setup instruction and
+does not prompt for or test a Brave key itself.
+
+Requests accept 1–20 results (default 10), a nonempty query of at most 400
+characters and 50 words, and `--timeout` in seconds (default 15, range 0.1–120).
+Output contains source URLs, titles, excerpts and the returned web-result fields
+under `extensions.brave`. Non-HTTP(S) result URLs are excluded. Missing credentials,
+authentication failures, rate limits, malformed responses and network errors fail
+explicitly without switching providers or printing upstream error bodies.
+
+`oma doctor` checks Brave credential availability with a one-second deadline and
+no Brave API request; it does not certify a valid key, quota or reachability. Other
+doctor checks may contact their respective services. `oma search providers` only
+reports registration. Native search remains owned by the agent runtime and has
+no standalone CLI adapter, so `oma search web` requires Brave selection or an
+explicit `--provider brave` override.
+
+Generated agent instructions route general web questions through
+`oma search web` when Brave is selected, overriding native-web routing in installed
+skills. Run `oma link` after changing the selection; returning to Native removes
+the Brave instruction. Search results remain untrusted evidence and source links
+should be cited.
 
 ## Gortex
 

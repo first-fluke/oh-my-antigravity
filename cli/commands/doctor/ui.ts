@@ -39,6 +39,11 @@ export async function renderDoctorReport(report: DoctorReport): Promise<void> {
       p.note(
         [
           `Documentation: ${providers.docs.provider} (${providers.docs.authentication}; reachability ${providers.docs.reachability})`,
+          ...(providers.web
+            ? [
+                `Web search: ${providers.web.provider} (${providers.web.status}; reachability ${providers.web.reachability}${providers.web.credentialConfigured === undefined ? "" : `; credential ${providers.web.credentialConfigured ? "configured" : "missing"}`})`,
+              ]
+            : []),
           `Code intelligence: ${providers.codeIntelligence.provider}${providers.codeIntelligence.experimental ? " (experimental)" : ""}`,
           `Semantic memory: ${providers.semanticMemory.provider} (${providers.semanticMemory.reachable ? "reachable" : (providers.semanticMemory.reason ?? "offline")})`,
           ...providers.issues,

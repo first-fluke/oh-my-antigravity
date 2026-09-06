@@ -34,7 +34,11 @@ afterEach(() => {
 it("defaults unattended fresh installs to Serena and Agent Memory without external setup", async () => {
   const selection = await promptProviders(root, true, vi.fn());
   expect(selection).toEqual({
-    providers: { code_intelligence: "serena", semantic_memory: "agentmemory" },
+    providers: {
+      web: "native",
+      code_intelligence: "serena",
+      semantic_memory: "agentmemory",
+    },
   });
   expect(prompts.select).not.toHaveBeenCalled();
   expect(prompts.text).not.toHaveBeenCalled();
@@ -45,7 +49,8 @@ it("defaults unattended fresh installs to Serena and Agent Memory without extern
 it("offers both alternatives interactively with the existing defaults preselected", async () => {
   prompts.select
     .mockResolvedValueOnce("gortex")
-    .mockResolvedValueOnce("honcho");
+    .mockResolvedValueOnce("honcho")
+    .mockResolvedValueOnce("native");
   prompts.text
     .mockResolvedValueOnce("http://127.0.0.1:8000")
     .mockResolvedValueOnce("my-team");
@@ -53,9 +58,14 @@ it("offers both alternatives interactively with the existing defaults preselecte
   expect(prompts.select.mock.calls.map(([arg]) => arg.initialValue)).toEqual([
     "serena",
     "agentmemory",
+    "native",
   ]);
   expect(selection).toEqual({
-    providers: { code_intelligence: "gortex", semantic_memory: "honcho" },
+    providers: {
+      web: "native",
+      code_intelligence: "gortex",
+      semantic_memory: "honcho",
+    },
     honcho: {
       base_url: "http://127.0.0.1:8000",
       workspace_id: "my-team",
@@ -73,6 +83,7 @@ it("retains saved selections, Honcho credentials and hybrid recall on reinstall"
   );
   const selection = await promptProviders(root, true, vi.fn());
   expect(selection.providers).toEqual({
+    web: "native",
     code_intelligence: "gortex",
     semantic_memory: "honcho",
   });
@@ -101,7 +112,11 @@ it("explicit flags override saved choices and preserve inactive Honcho settings"
   });
   saveProviders(root, selection);
   expect(parse(readFileSync(config, "utf8"))).toEqual({
-    providers: { code_intelligence: "serena", semantic_memory: "none" },
+    providers: {
+      web: "native",
+      code_intelligence: "serena",
+      semantic_memory: "none",
+    },
     honcho: { workspace_id: "saved" },
   });
 });
@@ -144,4 +159,40 @@ it("cancellation cleans up the download and exits without saving provider choice
   await expect(promptProviders(root, false, cleanup)).rejects.toThrow("exit");
   expect(cleanup).toHaveBeenCalledOnce();
   expect(prompts.text).not.toHaveBeenCalled();
+});
+
+it("selects Brave explicitly and preserves its credential references on reinstall", async () => {
+  writeFileSync(
+    config,
+    "brave: {api_key_env: CUSTOM_BRAVE, api_key_vault: team-key}\n",
+  );
+  const selected = await promptProviders(root, true, vi.fn(), {
+    webSearch: "brave",
+  });
+  saveProviders(root, selected);
+  expect(parse(readFileSync(config, "utf8"))).toMatchObject({
+    providers: { web: "brave" },
+    brave: { api_key_env: "CUSTOM_BRAVE", api_key_vault: "team-key" },
+  });
+  expect((await promptProviders(root, true, vi.fn())).providers.web).toBe(
+    "brave",
+  );
+});
+
+it("offers Native first and Brave as the only additional web provider", async () => {
+  prompts.select.mockReset().mockResolvedValue("brave");
+  const selected = await promptProviders(root, false, vi.fn(), {
+    codeIntelligence: "serena",
+    semanticMemory: "agentmemory",
+  });
+  expect(prompts.select).toHaveBeenCalledWith(
+    expect.objectContaining({
+      initialValue: "native",
+      options: [
+        expect.objectContaining({ value: "native" }),
+        expect.objectContaining({ value: "brave" }),
+      ],
+    }),
+  );
+  expect(selected.providers.web).toBe("brave");
 });

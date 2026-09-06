@@ -1,13 +1,39 @@
 import { z } from "zod";
 import { loadOmaConfig } from "./config.js";
 
+export const SearchProviderIdSchema = z
+  .string()
+  .regex(/^[a-z][a-z0-9_-]{0,63}$/);
+
 export const ProvidersSchema = z
   .object({
     docs: z.literal("context7").optional(),
+    web: SearchProviderIdSchema.optional(),
     code_intelligence: z.enum(["serena", "gortex"]).optional(),
     semantic_memory: z.enum(["agentmemory", "honcho", "none"]).optional(),
   })
   .strict();
+
+export const BraveConfigSchema = z
+  .object({
+    api_key_env: z
+      .string()
+      .regex(/^[A-Za-z_][A-Za-z0-9_]*$/)
+      .optional(),
+    api_key_vault: z
+      .string()
+      .regex(/^[A-Za-z0-9._-]{1,64}$/)
+      .optional(),
+  })
+  .strict();
+
+export function loadBraveConfig(
+  cwd?: string,
+): z.infer<typeof BraveConfigSchema> {
+  return BraveConfigSchema.parse(loadOmaConfig(cwd)?.brave ?? {});
+}
+
+export type BraveConfig = z.infer<typeof BraveConfigSchema>;
 
 export const HonchoConfigSchema = z
   .object({
@@ -41,6 +67,7 @@ export function loadProviders(cwd?: string): Required<ProvidersConfig> {
   const raw = ProvidersSchema.parse(loadOmaConfig(cwd)?.providers ?? {});
   return {
     docs: raw.docs ?? "context7",
+    web: raw.web ?? "native",
     code_intelligence: raw.code_intelligence ?? "serena",
     semantic_memory: raw.semantic_memory ?? "agentmemory",
   };

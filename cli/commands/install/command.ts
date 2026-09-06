@@ -1,4 +1,5 @@
 import { type Command, Option } from "commander";
+import { createSearchProviderRegistry } from "../../platform/search-providers.js";
 import { runAction } from "../../utils/cli-framework.js";
 import type { ProviderInstallOptions } from "./provider-preferences.js";
 import { install } from "./run.js";
@@ -20,6 +21,16 @@ export function registerInstall(program: Command): void {
   program
     .command("install")
     .description("Install oh-my-agent skills and configurations")
+    .addOption(
+      new Option(
+        "--web-search <provider>",
+        "Web search provider (default: native; retains saved choice)",
+      ).choices(
+        createSearchProviderRegistry()
+          .list("web")
+          .map((provider) => provider.id),
+      ),
+    )
     .addOption(
       new Option(
         "--code-intelligence <provider>",

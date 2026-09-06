@@ -25,6 +25,7 @@ describe("capability provider selection", () => {
     mkdirSync(sub);
     expect(loadProviders(sub)).toEqual({
       docs: "context7",
+      web: "native",
       code_intelligence: "serena",
       semantic_memory: "agentmemory",
     });

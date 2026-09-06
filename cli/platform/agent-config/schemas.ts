@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { HonchoConfigSchema, ProvidersSchema } from "../../utils/providers.js";
+import {
+  BraveConfigSchema,
+  HonchoConfigSchema,
+  ProvidersSchema,
+} from "../../utils/providers.js";
 
 // ---------------------------------------------------------------------------
 // AgentSpec — object only (no string shorthand)
@@ -84,6 +88,7 @@ export const OmaConfigSchema = z
     auto_update_cli: z.boolean().optional(),
     telemetry: z.boolean().optional(),
     providers: ProvidersSchema.optional(),
+    brave: BraveConfigSchema.optional(),
     honcho: HonchoConfigSchema.optional(),
     agents: AgentsMapSchema.optional(),
     models: z.record(z.string(), z.unknown()).optional(),

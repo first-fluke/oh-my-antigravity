@@ -10,6 +10,7 @@ import {
 import { fetchMedia } from "./media.js";
 import { metadataFromUrl, parseMetadata } from "./metadata.js";
 import { runPipeline } from "./pipeline.js";
+import { registerSearchProviders } from "./providers.js";
 import { discoverFeed, googleNewsRss, parseFeed } from "./rss.js";
 import {
   apiKeywordSearch,
@@ -20,6 +21,7 @@ import { archiveStrategy } from "./strategies/archive.js";
 import { findChromeExecutable } from "./strategies/browser.js";
 import { trustScore } from "./trust.js";
 import type { FetchContext, FetchResult, Strategy } from "./types.js";
+import { registerWebSearch } from "./web.js";
 
 const VALID_STRATEGIES: Strategy[] = [
   "api",
@@ -124,6 +126,9 @@ export function registerSearchCommand(program: Command): void {
       "Mechanical search primitives — fetch, meta, rss, media, trust, code",
     )
     .alias("s");
+
+  registerSearchProviders(search);
+  registerWebSearch(search);
 
   search
     .command("fetch <url>")
