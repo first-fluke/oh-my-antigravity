@@ -1,5 +1,12 @@
 # Changelog
 
+## [14.2.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.1.0...cli-v14.2.0) (2026-09-06)
+
+
+### Features
+
+* **search:** add extensible providers and Brave search ([1bee2f4](https://github.com/first-fluke/oh-my-agent/commit/1bee2f4b6a23b97e7fe8168e758fd602ef856766))
+
 ## [14.1.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.0.3...cli-v14.1.0) (2026-09-06)
 
 
