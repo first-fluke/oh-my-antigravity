@@ -11,6 +11,7 @@ import {
 } from "../../utils/cli-framework.js";
 import { controlAgentMemoryDaemon } from "./daemon.js";
 import { garbageCollectLocalState } from "./gc.js";
+import { registerHonchoKeys } from "./honcho-keys.js";
 import { printAgentMemoryImport } from "./import.js";
 import { maintainAgentMemory } from "./maintain.js";
 import {
@@ -43,6 +44,7 @@ export {
 };
 
 export function registerMemory(program: Command): void {
+  registerHonchoKeys(program);
   addOutputOptions(
     program
       .command("memory:init")

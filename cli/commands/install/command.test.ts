@@ -52,4 +52,43 @@ describe("install command --yes flag", () => {
     await makeProgram().parseAsync(["node", "oma", "--yes"]);
     expect(installMock).toHaveBeenCalledWith({ yes: true });
   });
+
+  it("passes provider and Honcho connection flags to install", async () => {
+    await makeProgram().parseAsync([
+      "node",
+      "oma",
+      "install",
+      "--yes",
+      "--code-intelligence",
+      "gortex",
+      "--semantic-memory",
+      "honcho",
+      "--honcho-url",
+      "http://127.0.0.1:8000",
+      "--honcho-workspace",
+      "team",
+    ]);
+    expect(installMock).toHaveBeenCalledWith({
+      yes: true,
+      codeIntelligence: "gortex",
+      semanticMemory: "honcho",
+      honchoUrl: "http://127.0.0.1:8000",
+      honchoWorkspace: "team",
+    });
+  });
+
+  it("rejects unsupported provider names before installation", async () => {
+    const program = makeProgram();
+    program.exitOverride().configureOutput({ writeErr: () => {} });
+    await expect(
+      program.parseAsync([
+        "node",
+        "oma",
+        "install",
+        "--code-intelligence",
+        "invalid",
+      ]),
+    ).rejects.toThrow();
+    expect(installMock).not.toHaveBeenCalled();
+  });
 });

@@ -1,5 +1,6 @@
-import type { Command } from "commander";
+import { type Command, Option } from "commander";
 import { runAction } from "../../utils/cli-framework.js";
+import type { ProviderInstallOptions } from "./provider-preferences.js";
 import { install } from "./run.js";
 
 export { install } from "./run.js";
@@ -19,9 +20,29 @@ export function registerInstall(program: Command): void {
   program
     .command("install")
     .description("Install oh-my-agent skills and configurations")
+    .addOption(
+      new Option(
+        "--code-intelligence <provider>",
+        "Code intelligence provider (default: Serena; retains saved choice)",
+      ).choices(["serena", "gortex"]),
+    )
+    .addOption(
+      new Option(
+        "--semantic-memory <provider>",
+        "Semantic memory provider (default: Agent Memory; retains saved choice)",
+      ).choices(["agentmemory", "honcho", "none"]),
+    )
+    .option(
+      "--honcho-url <url>",
+      "Honcho API origin (new connection: http://127.0.0.1:8000)",
+    )
+    .option(
+      "--honcho-workspace <id>",
+      "Honcho workspace ID (new connection: oma)",
+    )
     .action(
-      runAction(async (opts: { yes?: boolean }) => {
-        await install({ yes: resolveInstallYesFlag(program, opts) });
+      runAction(async (opts: ProviderInstallOptions & { yes?: boolean }) => {
+        await install({ ...opts, yes: resolveInstallYesFlag(program, opts) });
       }),
     );
 }

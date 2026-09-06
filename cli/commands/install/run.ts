@@ -22,6 +22,7 @@ import {
   readVersionInstallMode,
   saveLocalVersion,
 } from "../../platform/manifest.js";
+import { syncProviderMcp } from "../../platform/provider-mcp.js";
 import {
   createVendorSymlinks,
   createVendorWorkflowSymlinks,
@@ -67,6 +68,11 @@ import {
   promptVendors,
   selectClisWithConsent,
 } from "./prompts.js";
+import {
+  promptProviders,
+  reportProviderSetup,
+  saveProviders,
+} from "./provider-preferences.js";
 import { cleanDanglingSymlinks } from "./symlinks.js";
 
 export {
@@ -248,6 +254,13 @@ export async function install(options: InstallOptions = {}): Promise<void> {
 
     const vendors = await promptVendors(installRoot, nonInteractive);
 
+    const providerSelection = await promptProviders(
+      installRoot,
+      nonInteractive,
+      cleanup,
+      options,
+    );
+
     const devToolsBrowsers = await promptDevToolsBrowsers(
       nonInteractive,
       cleanup,
@@ -330,6 +343,7 @@ export async function install(options: InstallOptions = {}): Promise<void> {
         // Patch oma-config.yaml with selected language, model_preset, and vendors.
         // Uses regex-level replacement to preserve user-edited fields (timezone, etc.).
         patchUserConfig(installRoot, language, modelPreset, configuredVendors);
+        saveProviders(installRoot, providerSelection);
 
         // Reconcile all vendor adaptations via the link kernel. agy HUD,
         // Claude .mcp.json seeding, vendor settings (Claude / Gemini / Qwen /
@@ -353,6 +367,12 @@ export async function install(options: InstallOptions = {}): Promise<void> {
         }
 
         const postInstallMigrations = runMigrations(installRoot, { vendors });
+        // Legacy migrations may refresh Serena after link(); retain the chosen provider.
+        if (providerSelection.providers.code_intelligence === "gortex") {
+          syncProviderMcp(installRoot, configuredVendors, {
+            global: getInstallMode() === "global",
+          });
+        }
         if (postInstallMigrations.length > 0) {
           p.note(
             postInstallMigrations
@@ -428,7 +448,7 @@ export async function install(options: InstallOptions = {}): Promise<void> {
       }
 
       // --- Serena Project Setup ---
-      {
+      if (providerSelection.providers.code_intelligence === "serena") {
         // A global install has no project: its root is $HOME (or OMA_HOME),
         // which is not a codebase. Running per-project setup against it wrote
         // `~/.serena/project.yml` and appended $HOME to serena's `projects:`
@@ -516,6 +536,7 @@ export async function install(options: InstallOptions = {}): Promise<void> {
       }
 
       // Recommended global git settings (opt-in; skipped in CI / --yes).
+      reportProviderSetup(providerSelection);
       await maybeApplyRecommendedGitConfig({ nonInteractive });
 
       // Task 26 — stamp install mode into _version.json (schemaVersion=2).

@@ -13,6 +13,25 @@ keep Context7, Serena, and the existing optional AgentMemory behavior.
 
 ## Configuration
 
+`oma install` offers a code-intelligence choice (Serena or Gortex) and a semantic
+memory choice (Agent Memory, Honcho, or none). Fresh installs default to **Serena
+and Agent Memory**; reinstalling retains saved choices. For unattended installs:
+
+```sh
+oma install --yes --code-intelligence gortex --semantic-memory honcho \
+  --honcho-url http://127.0.0.1:8000 --honcho-workspace oma
+```
+
+Honcho selection also prompts for its server URL and workspace. New connections
+default to the local origin above, workspace `oma`, and `recall_mode: messages`;
+existing connection settings, credentials references, and recall mode are retained.
+The selection is saved before native configurations and hook routing are linked.
+Selecting Gortex skips Serena's binary, project, and context setup. Gortex and the
+Honcho server must be installed separately; selecting them does not start services
+or track repositories. Use `oma memory keys` to configure the credentials needed
+by your deployment, then `oma memory status` to check access. Selecting Agent
+Memory preserves its existing optional setup behavior.
+
 Set the following in the project's `.agents/oma-config.yaml` through your normal
 configuration source. Omit any field to retain its default.
 
@@ -33,7 +52,10 @@ honcho:
   recall_mode: hybrid  # hybrid | messages
 ```
 
-Supply the API key through the named environment variable; do not put it in YAML.
+Supply the API key through the named environment variable or an OS-keychain
+reference (`api_key_vault`); do not put the actual key in YAML. A nonempty
+environment key takes precedence over the keychain reference. Keychain failures
+do not fall back to unauthenticated requests or expose credential diagnostics.
 `workspace_id` is required for Honcho access. `project_id` is optional: its default
 is the resolved project-root path. Set a stable, unique project ID to share recall
 across checkouts or machines. Reusing an ID in the same workspace intentionally
@@ -50,9 +72,8 @@ oma memory status
 ```
 
 Run `oma link` after changing providers, including when reverting to defaults.
-There is no automatic provider installation, service deployment, or repository
-tracking in this integration. The installer continues to offer its existing
-defaults; experimental selection is configured explicitly in YAML.
+There is no automatic Gortex/Honcho installation, service deployment, or repository
+tracking in this integration.
 
 ## Gortex
 
@@ -84,6 +105,58 @@ has been indexed or run a graph query. If Gortex is unavailable, use native sear
 OMA does not silently activate Serena as a second provider.
 
 ## Honcho
+
+### Configure credentials
+
+Honcho connection credentials and the self-hosted server's embedding credentials
+serve different purposes. Use the hidden-input prompt for the one you need:
+
+```sh
+# Hosted/authenticated Honcho: store in the OS keychain and add api_key_vault
+# to the existing project's .agents/oma-config.yaml.
+oma memory keys --kind connection
+
+# Local Honcho with the default OpenAI embedding configuration:
+# store the key in ~/.honcho/profiles/oma/.env, outside the project.
+oma memory keys --kind embedding --profile oma
+```
+
+The connection command preserves existing YAML settings and comments, and does
+not change provider selection. Local keyless Honcho needs no connection key.
+The embedding command writes the profile file with mode `0600`; this is a local
+credential file, not the OS keychain. It sets `DERIVER_ENABLED`,
+`SUMMARY_ENABLED`, `PEER_CARD_ENABLED`, and `DREAM_ENABLED` to false, and
+`EMBED_MESSAGES` to true. The embedding service still processes message content;
+disabling generative inference does not disable embedding requests.
+
+`HONCHO_CONFIG_DIR` relocates the profile directory as in the upstream CLI;
+credential profiles inside the project are rejected. Existing embedding model,
+transport, endpoint, and vector dimensions are preserved. A new profile uses
+Honcho's default OpenAI embedding configuration. For an **already configured**
+Gemini embedding profile, use `--key-env LLM_GEMINI_API_KEY`; this only selects
+the credential variable, not the model or transport. The default variable is
+`LLM_OPENAI_API_KEY`. Profile changes apply when the server is restarted.
+
+```sh
+# Preview without prompting, opening the keychain, or writing a file.
+oma memory keys --kind embedding --profile oma --dry-run
+
+# Automation: read from an existing environment variable, never a key argument.
+oma memory keys --kind connection --from-env HONCHO_SETUP_KEY --json
+
+# After installing the latest upstream CLI, start/restart the configured profile.
+# This pulls the latest image and may issue embedding requests once data is sent.
+honcho start --profile oma --image ghcr.io/plastic-labs/honcho:latest
+```
+
+This command prepares credentials; it does not install/start Honcho or verify
+the supplied key. Set OMA's `honcho.base_url`, `workspace_id`, and
+`recall_mode: messages` for the local deployment, then run `oma link`.
+`messages` skips inferred-representation recall but still uses semantic search
+and therefore requires working embeddings. Fully model-free keyword recall
+is not implemented in this adapter.
+
+### Storage and recall
 
 The adapter uses the [Honcho v3 API](https://honcho.dev/docs/v3): get/create a
 workspace and project session, create messages, and search within that session.

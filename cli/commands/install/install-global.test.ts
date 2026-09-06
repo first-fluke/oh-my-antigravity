@@ -205,7 +205,13 @@ import {
   _resetInstallContext,
   setInstallContext,
 } from "../../platform/install-context.js";
+import { syncProviderMcp } from "../../platform/provider-mcp.js";
 import { install } from "../install/run.js";
+import { link } from "../link/run.js";
+
+vi.mock("../../platform/provider-mcp.js", () => ({
+  syncProviderMcp: vi.fn(() => []),
+}));
 
 describe("install --global: _install.json schema and meta", () => {
   let tmpDir: string;
@@ -285,6 +291,37 @@ describe("install --global: _install.json schema and meta", () => {
     expect(lastCall[0]).toBe(tmpDir);
     expect(typeof lastCall[1]).toBe("string");
     expect(lastCall[2]).toBe("global");
+  });
+
+  it("saves alternative providers before linking and skips all Serena setup", async () => {
+    await install({
+      yes: true,
+      codeIntelligence: "gortex",
+      semanticMemory: "honcho",
+    });
+    const writeIndex = fsState.writeFileSync.mock.calls.findIndex(
+      ([file, content]) =>
+        file === path.join(tmpDir, ".agents", "oma-config.yaml") &&
+        String(content).includes("code_intelligence: gortex"),
+    );
+    expect(writeIndex).toBeGreaterThanOrEqual(0);
+    expect(String(fsState.writeFileSync.mock.calls[writeIndex]?.[1])).toContain(
+      "semantic_memory: honcho",
+    );
+    expect(
+      fsState.writeFileSync.mock.invocationCallOrder[writeIndex],
+    ).toBeLessThan(vi.mocked(link).mock.invocationCallOrder[0] ?? 0);
+    expect(miscState.ensureSerenaBinary).not.toHaveBeenCalled();
+    expect(miscState.ensureSerenaProject).not.toHaveBeenCalled();
+    expect(miscState.ensureOmaSerenaContexts).not.toHaveBeenCalled();
+    expect(syncProviderMcp).toHaveBeenCalledWith(tmpDir, expect.any(Array), {
+      global: true,
+    });
+    expect(
+      vi.mocked(syncProviderMcp).mock.invocationCallOrder[0],
+    ).toBeGreaterThan(
+      miscState.runMigrations.mock.invocationCallOrder.at(-1) ?? 0,
+    );
   });
 
   it("never writes the install mode in project mode beforeEach overrides", () => {

@@ -21,6 +21,10 @@ export const HonchoConfigSchema = z
       .string()
       .regex(/^[A-Za-z_][A-Za-z0-9_]*$/)
       .optional(),
+    api_key_vault: z
+      .string()
+      .regex(/^[A-Za-z0-9._-]{1,64}$/)
+      .optional(),
     timeout_ms: z.number().int().min(100).max(30000).optional(),
     max_results: z.number().int().min(1).max(50).optional(),
     max_tokens: z.number().int().min(128).max(16000).optional(),

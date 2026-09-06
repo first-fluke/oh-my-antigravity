@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
+import type { ProviderInstallOptions } from "./provider-preferences.js";
 
-export type InstallOptions = {
+export type InstallOptions = ProviderInstallOptions & {
   /**
    * Non-interactive mode. Skips every prompt and falls back to safe
    * defaults (language=existing|en, model_preset=existing|claude,

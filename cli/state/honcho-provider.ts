@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { getSecret } from "../io/vault.js";
 import type { MemoryProvider } from "../types/memory.js";
 import { resolveProjectRoot } from "../utils/fs-utils.js";
 import { type HonchoConfig, HonchoConfigSchema } from "../utils/providers.js";
@@ -21,6 +22,7 @@ export function createHonchoMemoryProvider(options: Options): MemoryProvider {
   const url = new URL(base);
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   const key = env[config.api_key_env ?? "HONCHO_API_KEY"];
+  let vaultKey: Promise<string | null> | undefined;
   const workspace = config.workspace_id;
   const project = config.project_id ?? resolveProjectRoot(options.projectDir);
   const session = `oma-${createHash("sha256").update(project).digest("hex").slice(0, 32)}`;
@@ -36,16 +38,38 @@ export function createHonchoMemoryProvider(options: Options): MemoryProvider {
         ? "Honcho requires HTTPS, or HTTP on loopback for self-hosting"
         : !workspace
           ? "honcho.workspace_id is required"
-          : !local && !key
+          : !local && !key && !config.api_key_vault
             ? `Set ${config.api_key_env ?? "HONCHO_API_KEY"}`
             : undefined;
 
+  async function resolveCredential(signal: AbortSignal) {
+    if (key || !config.api_key_vault) return key;
+    signal.throwIfAborted();
+    vaultKey ??= getSecret(config.api_key_vault);
+    let rejectAbort: (reason: unknown) => void = () => {};
+    const aborted = new Promise<never>((_, reject) => {
+      rejectAbort = reject;
+    });
+    const onAbort = () => rejectAbort(signal.reason);
+    signal.addEventListener("abort", onAbort, { once: true });
+    try {
+      return await Promise.race([vaultKey, aborted]);
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+    }
+  }
+
   async function request(route: string, signal: AbortSignal, body?: unknown) {
+    const credential = await resolveCredential(signal);
+    if (config.api_key_vault && !credential) {
+      throw new Error("Configured Honcho vault credential is unavailable");
+    }
+    signal.throwIfAborted();
     const response = await fetch(`${base}${route}`, {
       method: body === undefined ? "GET" : "POST",
       headers: {
         "content-type": "application/json",
-        ...(key ? { Authorization: `Bearer ${key}` } : {}),
+        ...(credential ? { Authorization: `Bearer ${credential}` } : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
