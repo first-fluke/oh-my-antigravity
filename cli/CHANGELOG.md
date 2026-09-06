@@ -1,5 +1,12 @@
 # Changelog
 
+## [14.0.3](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.0.2...cli-v14.0.3) (2026-09-05)
+
+
+### Bug Fixes
+
+* **workflows:** align execution rules and remove redundant routing ([6368582](https://github.com/first-fluke/oh-my-agent/commit/63685821b8555e1da208e863ae4a234ade55ec2d))
+
 ## [14.0.2](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.0.1...cli-v14.0.2) (2026-09-05)
 
 
