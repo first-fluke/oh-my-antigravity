@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.1](https://github.com/first-fluke/oh-my-agent/compare/web-v6.0.0...web-v6.0.1) (2026-09-06)
+
+
+### Documentation
+
+* **workflows:** clarify selection guidance across all locales ([161e24f](https://github.com/first-fluke/oh-my-agent/commit/161e24f99dd0e13dd59a742353c5fb19ec915238)), closes [#665](https://github.com/first-fluke/oh-my-agent/issues/665)
+
 ## [6.0.0](https://github.com/first-fluke/oh-my-agent/compare/web-v5.1.1...web-v6.0.0) (2026-09-05)
 
 
