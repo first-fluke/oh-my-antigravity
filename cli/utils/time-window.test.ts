@@ -1,9 +1,22 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { loadTimezone } from "./config.js";
 import {
   getCompareWindows,
   parseTimeWindow,
   resolveWindowBounds,
 } from "./time-window.js";
+
+vi.mock("./config.js", () => ({
+  loadTimezone: vi.fn(() => "UTC"),
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("parseTimeWindow", () => {
   it("returns 7d default when no arg", () => {
@@ -80,24 +93,24 @@ describe("resolveWindowBounds", () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("Maximum window"),
     );
-    warnSpy.mockRestore();
   });
 
   it("does not warn when within limit", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     resolveWindowBounds("7d");
     expect(warnSpy).not.toHaveBeenCalled();
-    warnSpy.mockRestore();
   });
 
   it("returns provided timezone", () => {
     const { timezone } = resolveWindowBounds("1d", undefined, "Asia/Seoul");
     expect(timezone).toBe("Asia/Seoul");
+    expect(loadTimezone).not.toHaveBeenCalled();
   });
 
   it("returns fallback timezone when not provided", () => {
     const { timezone } = resolveWindowBounds("1d");
-    expect(timezone).toBeTruthy();
+    expect(timezone).toBe("UTC");
+    expect(loadTimezone).toHaveBeenCalledExactlyOnceWith();
   });
 
   it("calculates date boundaries in Asia/Seoul (UTC+9)", () => {
