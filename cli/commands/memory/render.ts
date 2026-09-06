@@ -5,6 +5,7 @@ import {
   installAgentMemoryService,
   uninstallAgentMemoryService,
 } from "../../platform/agentmemory-service.js";
+import { createMemoryProvider } from "../../state/semantic-memory.js";
 import type {
   MemoryGcOptions,
   MemoryMaintainAction,
@@ -15,7 +16,7 @@ import { controlAgentMemoryDaemon } from "./daemon.js";
 import { garbageCollectLocalState } from "./gc.js";
 import { maintainAgentMemory } from "./maintain.js";
 import { drainMemoryRetryQueue } from "./retry-drain.js";
-import { getAgentMemoryStatus, setupAgentMemory } from "./setup.js";
+import { setupAgentMemory } from "./setup.js";
 import { upgradeAgentMemory } from "./upgrade.js";
 
 export async function initMemory(
@@ -58,7 +59,7 @@ export async function initMemory(
 }
 
 export async function printAgentMemoryStatus(jsonMode = false): Promise<void> {
-  const status = await getAgentMemoryStatus();
+  const status = await createMemoryProvider().status();
   if (jsonMode) {
     console.log(JSON.stringify(status, null, 2));
     return;
@@ -76,7 +77,7 @@ export async function printAgentMemoryStatus(jsonMode = false): Promise<void> {
     ]
       .filter((line): line is string => line !== null)
       .join("\n"),
-    "AgentMemory",
+    status.provider,
   );
 }
 

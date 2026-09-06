@@ -5,6 +5,7 @@ import http from "node:http";
 import https from "node:https";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
+import { currentMemoryAdapter } from "./memory-adapter.ts";
 
 function endpointUrl(): string | null {
   if (process.env.OMA_NO_AGENTMEMORY === "1") return null;
@@ -241,6 +242,8 @@ export async function recallFacts(
   // socket error from the shared daemon), and an unguarded throw here blanks the
   // boundary snapshot the hook would otherwise emit. Degrade to local-only.
   try {
+    const adapter = currentMemoryAdapter(projectDir);
+    if (adapter) return await adapter.recall(query, k, projectDir);
     if (!(await isAgentMemoryReachable())) return [];
     const url = endpointUrl();
     if (!url) return [];
@@ -274,6 +277,8 @@ export async function observeWithTimeout(payload: {
   // endpoint resolution can throw under load, and a throw here must not abort
   // the hook that fired the observe.
   try {
+    const adapter = currentMemoryAdapter(payload.projectDir);
+    if (adapter) return await adapter.observe(payload);
     if (!(await isAgentMemoryReachable())) return false;
     const url = endpointUrl();
     if (!url) return false;

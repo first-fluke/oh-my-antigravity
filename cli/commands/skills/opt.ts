@@ -8,10 +8,8 @@ import {
 import { dirname, join } from "node:path";
 import { AGENTS_DIR } from "../../constants/paths.js";
 import { resolveVendor } from "../../platform/agent-config.js";
-import {
-  createAgentMemoryProvider,
-  createNoneMemoryProvider,
-} from "../../state/memory-provider.js";
+import { createNoneMemoryProvider } from "../../state/memory-provider.js";
+import { createMemoryProvider } from "../../state/semantic-memory.js";
 import { loadTaskFixtures, MIN_TASKS, scoreSkillBody } from "./eval.js";
 import { confirmLiveRun } from "./opt/cost-preview.js";
 import { editKey, splitTrainValTest, validateCandidate } from "./opt/edits.js";
@@ -230,7 +228,7 @@ export async function runSkillsOpt(
     options._memoryProvider ??
     (options._workspace
       ? createNoneMemoryProvider()
-      : createAgentMemoryProvider());
+      : createMemoryProvider({ projectDir: workspace }));
   const evolutionRecorder =
     options._evolutionRecorder ??
     (!options._workspace || options._memoryProvider

@@ -29,7 +29,23 @@ export async function renderDoctorReport(report: DoctorReport): Promise<void> {
     renderMcpTable(report);
     renderSkillsTable(report);
     renderSkillBoundaries(report);
-    renderAgentMemory(report);
+    if (
+      !report.providers ||
+      report.providers.semanticMemory.provider === "agentmemory"
+    )
+      renderAgentMemory(report);
+    if (report.providers) {
+      const providers = report.providers;
+      p.note(
+        [
+          `Documentation: ${providers.docs.provider} (${providers.docs.authentication}; reachability ${providers.docs.reachability})`,
+          `Code intelligence: ${providers.codeIntelligence.provider}${providers.codeIntelligence.experimental ? " (experimental)" : ""}`,
+          `Semantic memory: ${providers.semanticMemory.provider} (${providers.semanticMemory.reachable ? "reachable" : (providers.semanticMemory.reason ?? "offline")})`,
+          ...providers.issues,
+        ].join("\n"),
+        "Capability providers",
+      );
+    }
     renderStateHealth(report);
     renderHookWrappers(report);
     renderSelfHealing(report);

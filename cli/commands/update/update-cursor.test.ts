@@ -11,6 +11,8 @@ let mockInstallRoot = "";
 vi.mock("../../platform/install-context.js", () => ({
   getInstallRoot: vi.fn(() => mockInstallRoot),
   getInstallMode: vi.fn(() => "project"),
+  safeGetInstallRoot: vi.fn(() => mockInstallRoot),
+  safeGetInstallMode: vi.fn(() => "project"),
   _resetInstallContext: vi.fn(),
 }));
 

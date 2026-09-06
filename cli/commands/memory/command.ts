@@ -193,7 +193,7 @@ export function registerMemory(program: Command): void {
   addOutputOptions(
     program
       .command("memory:status")
-      .description("Show AgentMemory provider health"),
+      .description("Show selected semantic-memory provider health"),
   ).action(
     runAction(
       async (options) => {

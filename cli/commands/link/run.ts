@@ -17,6 +17,7 @@ import {
 } from "../../platform/opencode-plugin-composer.js";
 import { installPiExtension } from "../../platform/pi-extension-composer.js";
 import { installPiPromptTemplates } from "../../platform/pi-prompts.js";
+import { syncProviderMcp } from "../../platform/provider-mcp.js";
 import {
   applyCursorRules,
   mergeRulesIndexForVendor,
@@ -236,6 +237,22 @@ export function link(opts: LinkOptions = {}): LinkResult {
     new Set<string>([...readVendorsFromConfig(root), ...configuredVendors]),
   );
   const hookVendors = configuredVendors.filter(isHookVendor);
+  // Capture the user's original entries before legacy vendor writers refresh Serena.
+  // The projector validates all native config before writing and honors dry-run.
+  for (const path of syncProviderMcp(root, configuredVendors, {
+    prepare: true,
+    global: safeGetInstallMode() === "global",
+    dryRun,
+  })) {
+    record(path, "write", "code intelligence provider selection");
+  }
+  const syncProviders = (): void => {
+    for (const path of syncProviderMcp(root, configuredVendors, {
+      global: safeGetInstallMode() === "global",
+      dryRun,
+    }))
+      record(path, "write", "code intelligence provider selection");
+  };
   const syncBrowsers = (): void => {
     const browsers = loadDevToolsBrowsers(root);
     if (browsers === undefined) return;
@@ -266,6 +283,7 @@ export function link(opts: LinkOptions = {}): LinkResult {
       console.log(`${pc.yellow("⚠")} No vendors to link.`);
     }
     syncBrowsers();
+    syncProviders();
     return empty;
   }
 
@@ -359,6 +377,7 @@ export function link(opts: LinkOptions = {}): LinkResult {
     // Only extension / workflow-only vendors were configured; their
     // bridge / prompts / commands are installed above.
     syncBrowsers();
+    syncProviders();
     if (dryRun && !quiet) {
       renderLinkPlan(plan, root);
     }
@@ -708,6 +727,7 @@ export function link(opts: LinkOptions = {}): LinkResult {
   }
 
   syncBrowsers();
+  syncProviders();
 
   // 6. Merge vendor documentation (CLAUDE.md, AGENTS.md)
   const mergedDocs: string[] = [];

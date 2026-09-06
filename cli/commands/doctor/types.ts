@@ -134,6 +134,7 @@ export interface GitRecommendedDoctorCheck {
 }
 
 export interface DoctorReport {
+  providers?: import("./providers.js").ProviderDoctorCheck;
   /**
    * Root the install-scoped checks ran against — `~/.agents/`'s parent under
    * `--global`, otherwise the project dir. Also the root `oma doctor`'s repair

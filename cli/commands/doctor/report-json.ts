@@ -3,6 +3,7 @@ import type { DoctorReport } from "./types.js";
 
 export function serializeReportAsJson(report: DoctorReport): string {
   const payload = {
+    providers: report.providers,
     ok: report.totalIssues === 0,
     issues: report.totalIssues,
     clis: report.clis.map((c) => ({

@@ -7,7 +7,7 @@ import {
   SEMANTIC_EVENT_KINDS,
 } from "../../.agents/hooks/core/state-core.ts";
 import type { MemoryProvider } from "../types/memory.js";
-import { createAgentMemoryProvider } from "./memory-provider.js";
+import { createMemoryProvider } from "./semantic-memory.js";
 
 export * from "../../.agents/hooks/core/state-core.ts";
 
@@ -25,7 +25,7 @@ function enqueueObserveRetry(projectDir: string, event: OmaEvent): void {
  *
  * Returns null for events that should not become durable facts.
  */
-function rememberContentForEvent(
+export function rememberContentForEvent(
   event: OmaEvent,
 ): { content: string; importance: number } | null {
   const payload = event.payload ?? {};
@@ -129,23 +129,34 @@ export async function emitEventWithMemory(
   projectDir: string,
   sid: string,
   event: Omit<Partial<OmaEvent>, "sid"> & { kind: string },
-  provider: MemoryProvider = createAgentMemoryProvider(),
+  provider: MemoryProvider = createMemoryProvider({ projectDir }),
 ): Promise<OmaEvent> {
   const enriched = emitEvent(projectDir, sid, event);
   if (!SEMANTIC_EVENT_KINDS.has(enriched.kind)) return enriched;
 
-  const observed = await provider.observe({
-    sessionId: sid,
-    content: `${JSON.stringify(enriched)}\n`,
-    source: "oma-workflow",
-  });
+  const observed =
+    provider.observeEvents === false ||
+    (await provider.observe({
+      sessionId: sid,
+      content: `${JSON.stringify(enriched)}\n`,
+      source: "oma-workflow",
+    }));
   if (!observed) enqueueObserveRetry(projectDir, enriched);
 
   // Durable, recallable fact for cross-boundary rehydration (best-effort: a
   // failure here never affects L1 or the observe retry queue). Feature-detected
   // so provider stubs without `remember` stay valid.
   const memo = rememberContentForEvent(enriched);
-  if (memo && typeof provider.remember === "function") {
+  if (
+    memo &&
+    typeof provider.remember === "function" &&
+    (provider.name !== "honcho" ||
+      [
+        "decision.made",
+        "blocker.raised",
+        "skill.pattern.consolidated",
+      ].includes(enriched.kind))
+  ) {
     try {
       await provider.remember({
         sessionId: sid,

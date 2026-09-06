@@ -48,7 +48,9 @@ import kiroVariant from "../../../.agents/hooks/variants/kiro.json" with {
 import qwenVariant from "../../../.agents/hooks/variants/qwen.json" with {
   type: "json",
 };
+import { withSelectedHookMemory } from "../../state/hook-memory.js";
 import type { VendorType } from "../../types/vendors.js";
+import { loadProviders } from "../../utils/providers.js";
 import { nativeEventToKind, normalizeInput } from "./adapters.js";
 import type {
   HandlerCtx,
@@ -329,14 +331,21 @@ export async function runHookDispatch(req: HookRequest): Promise<HookResponse> {
   // runs), falling back to the wrapper's process cwd. State files resolve here.
   const projectRoot = resolveGitRoot(input.cwd || cwd);
 
-  const chain = resolveChain(vendor, nativeEvent);
+  const providers = loadProviders(projectRoot);
+  const chain = resolveChain(vendor, nativeEvent).filter(
+    (handler) =>
+      providers.code_intelligence !== "gortex" ||
+      handler.id !== "serena-primer",
+  );
   if (chain.length === 0) {
     return { output: "" };
   }
 
   const ctx: HandlerCtx = { vendor, cwd: projectRoot, sid };
 
-  const merged = await runChain(chain, input, ctx);
+  const merged = await withSelectedHookMemory(projectRoot, () =>
+    runChain(chain, input, ctx),
+  );
 
   // Dialect render — translate the merged HandlerResult into the vendor-native
   // stdout shape via hook-output.ts.  Each vendor expects a slightly different

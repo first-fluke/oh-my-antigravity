@@ -10,6 +10,7 @@ import {
   parseFrontmatter,
   serializeFrontmatter,
 } from "../utils/frontmatter.js";
+import { loadProviders } from "../utils/providers.js";
 import { atomicWriteFileSync } from "../utils/safe-write.js";
 
 /** SSOT for all rules. */
@@ -201,7 +202,11 @@ function orderedDocVendors(vendors: readonly string[]): string[] {
  * sharing the file is described, rather than the last one to be linked
  * overwriting the others.
  */
-function buildVendorBlock(vendors: string[], rules: ParsedRule[]): string {
+function buildVendorBlock(
+  vendors: string[],
+  rules: ParsedRule[],
+  codeProvider: "serena" | "gortex" = "serena",
+): string {
   const primary = vendors[0] ?? "";
   const spawnLines =
     vendors.length > 1
@@ -236,7 +241,9 @@ function buildVendorBlock(vendors: string[], rules: ParsedRule[]): string {
     "",
     "## Code Search",
     "",
-    "Serena MCP is required for code search and discovery. Load deferred tools before use. Use native search/read only when Serena is unavailable or times out, or for plain non-code content.",
+    codeProvider === "gortex"
+      ? "Gortex is the selected code-intelligence provider (experimental). Use its MCP tools for code search, navigation, impact, contracts and edits. This selection overrides Serena-specific routing in installed skills. Load deferred tools before use. Use native search/read when Gortex is unavailable or times out; do not silently enable Serena. Never run gortex install/init or track additional repositories automatically; repository tracking requires explicit user consent. Context7 remains the documentation provider. OMA workflow state and verification stay in .agents/state/."
+      : "Serena MCP is required for code search and discovery. Load deferred tools before use. Use native search/read only when Serena is unavailable or times out, or for plain non-code content.",
     "",
     "## Workflows",
     "",
@@ -312,7 +319,11 @@ export function mergeRulesIndexForVendor(
   ]);
 
   const rules = readRules(targetDir);
-  const block = buildVendorBlock(vendors, rules);
+  const block = buildVendorBlock(
+    vendors,
+    rules,
+    loadProviders(targetDir).code_intelligence,
+  );
   mergeOmaBlock(join(targetDir, fileName), block);
   return true;
 }

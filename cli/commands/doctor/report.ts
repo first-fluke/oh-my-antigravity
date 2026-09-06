@@ -24,6 +24,7 @@ import {
   collectVendorDocChecks,
 } from "./environment-checks.js";
 import { collectHookWrapperChecks } from "./hook-wrapper-check.js";
+import { collectProviderCheck } from "./providers.js";
 import { collectSerenaDaemonCheck } from "./serena-daemons.js";
 import { collectSerenaReapCheck } from "./serena-reap.js";
 import { collectStateDoctorCheck } from "./state-health.js";
@@ -157,6 +158,7 @@ export async function collectDoctorReport(
   const skillAudit = auditSkills(root);
   const skillEval = computeEvalCoverage(root, skillAudit.skillCount);
   const agentMemory = await collectAgentMemoryCheck(root);
+  const providers = await collectProviderCheck(root, agentMemory.status);
   const serenaReap = collectSerenaReapCheck(cwd);
   const serenaDaemons = collectSerenaDaemonCheck();
   const state = collectStateDoctorCheck(root);
@@ -174,7 +176,12 @@ export async function collectDoctorReport(
   const selfHealingIssues = selfHealing && !selfHealing.ok ? 1 : 0;
   // Only an issue when Serena's project config exists; OMA coordination state
   // alone must not create a Serena dependency.
-  const serenaBinaryIssues = hasSerena && !serenaBinary.installed ? 1 : 0;
+  const serenaBinaryIssues =
+    providers.codeIntelligence.provider === "serena" &&
+    hasSerena &&
+    !serenaBinary.installed
+      ? 1
+      : 0;
 
   const gitStatus = inspectRecommendedGitConfig();
   const gitRecommended: GitRecommendedDoctorCheck = {
@@ -194,7 +201,10 @@ export async function collectDoctorReport(
     missingCLIs.length +
     missingSkills.length +
     vendorDocIssues +
-    agentMemory.issues.length +
+    (providers.semanticMemory.provider === "agentmemory"
+      ? agentMemory.issues.length
+      : 0) +
+    providers.issues.length +
     serenaReap.issues.length +
     serenaDaemons.issues.length +
     state.issues.length +
@@ -204,6 +214,7 @@ export async function collectDoctorReport(
 
   return {
     installRoot: root,
+    providers,
     clis,
     mcpChecks,
     skillChecks,

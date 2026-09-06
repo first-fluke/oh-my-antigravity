@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { type OmaEvent, retryObservePath } from "../../state/events.js";
-import { createAgentMemoryProvider } from "../../state/memory-provider.js";
+import { createMemoryProvider } from "../../state/semantic-memory.js";
 import type {
   MemoryProvider,
   MemoryRetryDrainResult,
@@ -32,7 +32,7 @@ export async function drainMemoryRetryQueue(
   } = {},
 ): Promise<MemoryRetryDrainResult> {
   const projectDir = args.projectDir ?? resolveProjectRoot();
-  const provider = args.provider ?? createAgentMemoryProvider();
+  const provider = args.provider ?? createMemoryProvider({ projectDir });
   const retryPath = retryObservePath(projectDir);
   if (!existsSync(retryPath)) {
     return {
@@ -60,7 +60,7 @@ export async function drainMemoryRetryQueue(
       continue;
     }
 
-    if (args.dryRun) {
+    if (args.dryRun || provider.observeEvents === false) {
       retainedLines.push(line);
       continue;
     }

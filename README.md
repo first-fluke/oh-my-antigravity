@@ -337,6 +337,7 @@ flowchart TD
 
 - **[Detailed Documentation](./docs/AGENTS_SPEC.md)** — Full technical spec and architecture
 - **[Supported Agents](./docs/SUPPORTED_AGENTS.md)** — Agent support matrix across IDEs
+- **[Capability Providers](./docs/capability-providers.md)** — Experimental Gortex and Honcho configuration, routing, and limits
 - **[Benchmark Report](./benchmarks/README.md)** — Method, scores, screenshots, and caveats
 - **[Web Docs](https://first-fluke.github.io/oh-my-agent/)** — Guides, tutorials, and CLI reference
 

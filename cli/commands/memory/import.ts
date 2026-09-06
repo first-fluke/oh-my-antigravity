@@ -3,7 +3,7 @@ import { TZDate } from "@date-fns/tz";
 import { parse, startOfDay } from "date-fns";
 import pc from "picocolors";
 import "../recap/internal/index.js";
-import { createAgentMemoryProvider } from "../../state/memory-provider.js";
+import { createMemoryProvider } from "../../state/semantic-memory.js";
 import type {
   MemoryImportLoadOptions,
   MemoryImportOptions,
@@ -167,7 +167,10 @@ export async function importAgentMemory(
   });
   const turns = Array.isArray(loaded) ? loaded : loaded.turns;
   if (!Array.isArray(loaded)) warnings.push(...loaded.warnings);
-  const provider = args.provider ?? createAgentMemoryProvider();
+  const provider = args.provider ?? createMemoryProvider();
+  if (provider.observeEvents === false) {
+    throw new Error(`${provider.name} does not accept raw transcript imports`);
+  }
   const observed = await observeRawTurns({
     provider,
     turns,

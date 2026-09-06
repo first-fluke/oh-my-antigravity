@@ -21,11 +21,21 @@ export interface MemoryRecallPayload {
 export interface MemoryRecallResult {
   text: string;
   score: number;
+  kind?: "fact" | "inference";
   source?: string;
+  provenance?: {
+    provider: string;
+    workspace: string;
+    session: string;
+    message?: string;
+    peer?: string;
+    /** When retrieved, not when the server originally formed the inference. */
+    retrievedAt?: string;
+  };
 }
 
 export interface MemoryProviderStatus {
-  provider: "agentmemory" | "none";
+  provider: import("../utils/providers.js").SemanticMemoryProviderName;
   reachable: boolean;
   endpoint?: string;
   version?: string;
@@ -33,7 +43,9 @@ export interface MemoryProviderStatus {
 }
 
 export interface MemoryProvider {
-  name: "agentmemory" | "none";
+  name: import("../utils/providers.js").SemanticMemoryProviderName;
+  /** False means raw event mirroring is unsupported, not a retryable failure. */
+  observeEvents?: boolean;
   status(): Promise<MemoryProviderStatus>;
   observe(payload: MemoryObservePayload): Promise<boolean>;
   /**
