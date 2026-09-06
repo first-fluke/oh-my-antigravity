@@ -1,5 +1,12 @@
 # Changelog
 
+## [14.4.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.3.0...cli-v14.4.0) (2026-09-06)
+
+
+### Features
+
+* **state:** move sessions to home profile storage ([1fb149c](https://github.com/first-fluke/oh-my-agent/commit/1fb149c20d185f702ce29ed41353de0702a8f4a7))
+
 ## [14.3.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.2.0...cli-v14.3.0) (2026-09-06)
 
 
