@@ -11,6 +11,28 @@ Er zijn 16 workflows, waarvan 4 persistent zijn (ze behouden status en kunnen ni
 
 ---
 
+## Een skill of workflow kiezen {#choosing-a-skill-or-workflow}
+
+Kies op basis van de coördinatie en verificatie die de taak nodig heeft. Volg een workflow die je al hebt gekozen; zet een actieve workflow voort totdat je deze expliciet annuleert of wijzigt. Gebruik deze gids voor een nieuwe taak waarvoor nog geen workflow is gekozen:
+
+| Wat de taak nodig heeft | Keuze | Voorbeeld |
+|---|---|---|
+| Eén domein zonder coördinatie tussen agenten | [Eén skill](/docs/guide/single-skill) | Een API-endpoint toevoegen en de validatie testen |
+| Meerdere domeinen met stapsgewijze planning, implementatie en QA | `/work` | Een API-wijziging afstemmen met de web- en mobiele clients |
+| Automatische delegatie van onafhankelijke taken voor parallelle uitvoering | `/orchestrate` | Backend- en frontendtaken parallel implementeren nadat afhankelijkheden zijn opgelost |
+| Een expliciet gevraagd uitgebreid kwaliteitsproces | `/ultrawork` | Alle reviews voor planning, implementatie, verificatie, verfijning en gereedheid voor oplevering uitvoeren |
+| Een expliciet verzoek om de uitvoering te herhalen totdat mechanisch verifieerbare criteria slagen | `/ralph` | Implementatie en onafhankelijke verificatie herhalen totdat de opgegeven regressiecontroles slagen, binnen de beveiligingen van de lus |
+
+`/orchestrate` laadt een bruikbaar plan of maakt er een via `/plan` voordat agenten starten. Je hoeft `/plan` niet vooraf uit te voeren. Het bestaan van een plan is dus niet het onderscheid tussen `/work` en `/orchestrate`; kies op basis van de gewenste coördinatie. Beide kunnen onafhankelijke taken parallel uitvoeren.
+
+Acceptatiecriteria en tests horen ook bij taken met één skill. Alleen hun aanwezigheid vraagt niet om `/ralph`: elke Ralph-iteratie voert het volledige ultrawork-proces uit met een onafhankelijke judge. Kies Ralph als je die verificatielus wilt herhalen. Beveiligingen kunnen de uitvoering stoppen terwijl er nog onvoltooide of geblokkeerde taken zijn.
+
+Deze tabel geeft keuzeadvies en is geen automatische workflowrouter. De hostagent kan een geschikte aanpak aanbevelen; een workflow aanbevelen of uitleggen start deze niet. Een slashcommando kiest expliciet een workflow. Als de hook voor trefwoorddetectie actief is, kunnen overeenkomende geconfigureerde trefwoorden of patronen ook een workflow activeren, afhankelijk van de filters voor informatieve vragen. De detector classificeert geen aantallen domeinen, inspecteert niet of een plan klaar is voor uitvoering en gebruikt deze tabel niet als prioriteitsalgoritme.
+
+Bij de planreview geldt de toestemming die al voor de taak is gegeven. Agenten vragen alleen om een belangrijke ontbrekende beslissing of toestemming voor een actie buiten die scope. Een review van de gereedheid voor oplevering geeft op zichzelf geen toestemming voor publicatie of deployment.
+
+---
+
 ## Persistente workflows
 
 Persistente workflows blijven draaien totdat alle taken klaar zijn. Ze behouden status in `.agents/state/` en herinjecteren `[OMA PERSISTENT MODE: ...]`-context bij elk gebruikersbericht totdat ze expliciet worden gedeactiveerd.
@@ -48,8 +70,8 @@ Whitelist van zelfstandige naamwoorden (15): app, api, service, server, cli, too
 
 **Stappen:**
 1. **Stap 0 — Voorbereiding:** Lees coördinatieskill, contextladingsgids, geheugenprotocol. Detecteer leverancier.
-2. **Stap 1 — Plan Laden/Aanmaken:** Controleer op `.agents/results/plan-{sessionId}.json`. Indien afwezig, vraag gebruiker eerst `/plan` uit te voeren.
-3. **Stap 2 — Sessie Initialiseren:** Laad `oma-config.yaml`, toon CLI-mappingtabel, genereer sessie-ID (`session-JJJJMMDD-UUMMSS`), maak `orchestrator-session.md` en `task-board.md` aan in geheugen.
+2. **Stap 1 — Plan Laden/Aanmaken:** Controleer `.agents/results/plan-{sessionId}.json` en vervolgens het meest recente bestand `plan-*.json`. Als er geen plan is of een taak geen agent, prioriteit, afhankelijkheden of acceptatiecriteria heeft, maak dan via `/plan` een plan met dezelfde sessie-ID. Presenteer het plan en gebruik de bestaande toestemming; vraag vóór delegatie alleen om een belangrijke ontbrekende beslissing of nieuwe toestemming.
+3. **Stap 2 — Sessie Initialiseren:** Laad `oma-config.yaml`, toon CLI-mappingtabel, hergebruik de sessie-ID uit de plancreatie of genereer er een (`session-YYYYMMDD-HHMMSS`), maak `orchestrator-session.md` en `task-board.md` aan in geheugen.
 4. **Stap 3 — Agenten Spawnen:** Voor elke prioriteitstier (P0 eerst, dan P1...), spawn agenten met leverancier-geschikte methode. Overschrijd nooit MAX_PARALLEL.
 5. **Stap 4 — Monitoren:** Poll `progress-{agent}.md`-bestanden, werk `task-board.md` bij. Let op voltooiingen, fouten, crashes.
 6. **Stap 5 — Verifieren:** Draai `verify.sh {agent-type} {workspace}` per voltooide agent. Bij falen, herspawn met foutcontext (max 2 herhaalpogingen). Na 2 herhaalpogingen, activeer Exploratieslus.
@@ -65,7 +87,7 @@ Whitelist van zelfstandige naamwoorden (15): app, api, service, server, cli, too
 
 ### /work
 
-**Beschrijving:** Stap-voor-stap multi-domeincoördinatie. PM plant eerst, dan voeren agenten uit met gebruikersbevestiging bij elke poort, gevolgd door QA-review en probleemoplossing.
+**Beschrijving:** Stap-voor-stap multi-domeincoördinatie. PM plant eerst, dan voeren agenten taken uit binnen de toegestane scope, gevolgd door QA-review en probleemoplossing.
 
 **Persistent:** Ja. Statusbestand: `.agents/state/work-state.json`.
 
@@ -84,14 +106,14 @@ Whitelist van zelfstandige naamwoorden (15): app, api, service, server, cli, too
 1. **Stap 0 — Voorbereiding:** Lees skills, context-loading, geheugenprotocol.
 2. **Stap 1 — Requirements Analyseren:** Identificeer betrokken domeinen.
 3. **Stap 2 — PM Agent Planning:** PM ontleedt requirements, definieert API-contracten, slaat op in `.agents/results/plan-{sessionId}.json`.
-4. **Stap 3 — Plan Reviewen:** Presenteer plan aan gebruiker. **Moet bevestiging krijgen.**
+4. **Stap 3 — Plan Reviewen:** Presenteer het plan en ga verder binnen de bestaande toestemming. Vraag alleen om een belangrijke ontbrekende beslissing of nieuwe toestemming.
 5. **Stap 4 — Agenten Spawnen:** Spawn per prioriteitstier, parallel binnen dezelfde tier.
 6. **Stap 5 — Monitoren:** Poll voortgangsbestanden, verifieer API-contractuitlijning.
 7. **Stap 6 — QA Review:** Spawn QA-agent voor beveiliging, prestaties, toegankelijkheid, codekwaliteit.
 8. **Stap 6.1 — Quality Score** (conditioneel): Meet en registreer basislijn.
 9. **Stap 7 — Itereren:** Bij CRITICAL/HIGH-bevindingen, herspawn verantwoordelijke agenten.
 
-**Wanneer gebruiken:** Functies die meerdere domeinen beslaan waar je stap-voor-stap controle wilt.
+**Wanneer gebruiken:** Functies over meerdere domeinen waarvoor je planning, implementatie en QA stapsgewijs wilt coördineren.
 
 ---
 
@@ -117,11 +139,11 @@ Whitelist van zelfstandige naamwoorden (15): app, api, service, server, cli, too
 | **SHIP** | 14-17 | QA Agent (gespawnd) | Codekwaliteit (lint/dekking), UX-stroom, Gerelateerde Problemen, Deploymentgereedheid |
 
 **Poortdefinities:**
-- **PLAN_GATE:** Plan gedocumenteerd, aannames opgesomd, alternatieven overwogen, gebruikersbevestiging.
-- **IMPL_GATE:** Build slaagt, tests slagen, alleen geplande bestanden gewijzigd.
+- **PLAN_GATE:** Plan gedocumenteerd, aannames opgesomd, alternatieven overwogen, review op over-engineering voltooid, scope toegestaan.
+- **IMPL_GATE:** Toepasselijke controles zonder bestandsuitvoer en tests slagen, alleen geplande bestanden gewijzigd, basislijn van de Quality Score vastgelegd (indien gemeten). Buildcontroles worden alleen op expliciet verzoek uitgevoerd.
 - **VERIFY_GATE:** Implementatie matcht requirements, nul CRITICAL, nul HIGH, geen regressies, Quality Score >= 75.
 - **REFINE_GATE:** Geen grote bestanden/functies (> 500 regels / > 50 regels), code opgeschoond, Quality Score niet gedaald.
-- **SHIP_GATE:** Kwaliteitscontroles geslaagd, UX geverifieerd, deployment-checklist compleet, gebruikers eindgoedkeuring.
+- **SHIP_GATE:** Kwaliteitscontroles geslaagd, UX geverifieerd, gerelateerde problemen opgelost, deployment-checklist compleet, uiteindelijke Quality Score >= 75 met niet-negatieve delta (indien gemeten). Gebruik bestaande toestemming; publicatie of deployment vereist toestemming voor die actie.
 
 **Wanneer gebruiken:** Maximale kwaliteitslevering. Wanneer code productiegereed moet zijn met uitgebreide review.
 
@@ -129,7 +151,7 @@ Whitelist van zelfstandige naamwoorden (15): app, api, service, server, cli, too
 
 ### /ralph
 
-**Beschrijving:** Persistente, zelfreferentiële uitvoeringslus. Verpakt ultrawork met een onafhankelijke verifier die na elke iteratie de voltooiingscriteria controleert. Blijft doorlopen totdat alle criteria slagen of de beveiligingen ingrijpen.
+**Beschrijving:** Persistente, zelfreferentiële uitvoeringslus. Verpakt ultrawork met een onafhankelijke verifier die na elke iteratie de voltooiingscriteria controleert. Meldt volledige voltooiing als alle criteria slagen, gedeeltelijke voltooiing als alleen geslaagde en geblokkeerde criteria overblijven, of stopt wanneer beveiligingen ingrijpen.
 
 **Persistent:** Ja. Statusbestand: `.agents/state/ralph-state.json`.
 
@@ -146,18 +168,18 @@ Whitelist van zelfstandige naamwoorden (15): app, api, service, server, cli, too
 | Duits | "hör nicht auf", "bis zur fertigstellung", "alles fertigstellen" |
 
 **Fasen:**
-1. **Fase 0 — INIT:** Vereisten laden (context-loading, geheugenprotocol, judge-protocol). Verifieerbare voltooiingscriteria definiëren (elk moet mechanisch te verifiëren zijn — test slaagt, build slaagt, bestand bestaat). Criteria ter bevestiging aan de gebruiker presenteren. Sessie initialiseren met `max_iterations: 5`.
+1. **Fase 0 — INIT:** Vereisten laden (context-loading, geheugenprotocol, judge-protocol). Definieer en registreer mechanisch verifieerbare voltooiingscriteria, zoals testasserties, typecontroles zonder bestandsuitvoer, exitcodes of het bestaan van bestanden. Neem buildcontroles alleen op bij een expliciet verzoek. Toon de criteria en ga verder binnen de toegestane scope. Sessie initialiseren met `max_iterations: 5`.
 2. **Fase 1 — WORK:** Ultrawork (PLAN → IMPL → VERIFY → REFINE → SHIP) uitvoeren als één iteratie.
-3. **Fase 2 — JUDGE:** Onafhankelijke verifier controleert elk voltooiingscriterium tegenover de werkelijke projectstatus (tests uitvoeren, builds controleren, bestaan van bestanden verifiëren). Elk criterium scoren als PASS/FAIL met bewijs.
-4. **Fase 3 — DECIDE:** Als alle criteria PASS → lus beëindigen, eindrapport genereren. Bij FAIL → iteratieteller verhogen, foutcontext terugvoeren, terug naar Fase 1.
+3. **Fase 2 — JUDGE:** Onafhankelijke verifier controleert elk voltooiingscriterium tegenover de werkelijke projectstatus (toegestane controles uitvoeren en het bestaan van bestanden verifiëren). Leg bewijs en de status van elk criterium vast, waaronder PASS, FAIL, REGRESSED of BLOCKED.
+4. **Fase 3 — DECIDE:** Als alle criteria PASS zijn, meld volledige voltooiing. Als alleen PASS en BLOCKED overblijven, meld gedeeltelijke voltooiing. Geef bij FAIL of REGRESSED de foutcontext door aan de volgende iteratie, voor zover de beveiligingen dat toelaten.
 5. **Beveiligingen:** De lus stopt als `current_iteration >= max_iterations` (standaard 5), of als hetzelfde criterium 3 keer achter elkaar faalt met dezelfde grondoorzaak (stuck-detectie).
 
-**Belangrijkste verschil met /ultrawork:** Ultrawork is een 5-fase workflow in één doorgang. Ralph verpakt ultrawork in een retry-lus met een onafhankelijke judge die voltooiing objectief verifieert — hij blijft doorgaan totdat het werk daadwerkelijk klaar is, niet alleen "beoordeeld".
+**Belangrijkste verschil met /ultrawork:** Ultrawork voert een proces met 5 fasen uit en probeert het opnieuw als een fasepoort faalt. Ralph verpakt ultrawork in een retry-lus met een onafhankelijke judge die voltooiing objectief verifieert. De lus eindigt met een rapport over volledige voltooiing, gedeeltelijke voltooiing bij geblokkeerd werk of een stop door beveiligingen.
 
 **Gelezen bestanden:** `.agents/workflows/ralph/resources/judge-protocol.md`, alle ultrawork-bestanden.
 **Geschreven bestanden:** `session-ralph.md` (geheugen), iteratielogs, eindrapport.
 
-**Wanneer gebruiken:** Wanneer gegarandeerde voltooiing nodig is — de agent moet blijven werken totdat verifieerbare criteria slagen, niet slechts één doorgang doen en rapporteren.
+**Wanneer gebruiken:** Wanneer je expliciet om herhaalde uitvoering en onafhankelijke verificatie volgens mechanische voltooiingscriteria vraagt. Tests alleen vereisen geen Ralph; houd rekening met het volledige ultrawork-proces in elke iteratie en de beveiligingen.
 
 ---
 
@@ -461,14 +483,19 @@ De workflow kan ook op natuurlijke wijze eindigen wanneer alle stappen zijn volt
 
 ## Typische workflowsequenties
 
-### Snelle functie
+### Functie binnen één domein
 ```
-/plan → uitvoer reviewen → /exec-plan
+Describe the task → relevant skill → implement → focused verification
 ```
 
 ### Complex multi-domein project
 ```
-/work → PM plant → gebruiker bevestigt → agenten spawnen → QA reviewt → problemen fixen → leveren
+/work → PM plans → review within authorized scope → agents spawn → QA reviews → fix issues → report
+```
+
+### Geautomatiseerde parallelle implementatie
+```
+/orchestrate → load or create plan → resolve dependencies → spawn independent tasks → verify → report
 ```
 
 ### Maximale kwaliteitslevering
@@ -489,4 +516,9 @@ De workflow kan ook op natuurlijke wijze eindigen wanneer alle stappen zijn volt
 ### Nieuwe codebase setup
 ```
 /deepinit → AGENTS.md + ARCHITECTURE.md + docs/
+```
+
+### Herhaalde uitvoering met onafhankelijke verificatie
+```
+/ralph → define criteria → ultrawork → judge → repeat as needed → completion, partial completion, or safeguard report
 ```

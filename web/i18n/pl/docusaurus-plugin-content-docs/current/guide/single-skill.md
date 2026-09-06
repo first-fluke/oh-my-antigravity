@@ -24,6 +24,8 @@ Używaj gdy zadanie spełnia WSZYSTKIE te kryteria:
 - Funkcjonalność obejmuje frontend, backend i bazę danych
 - Zakres rośnie poza jedną domenę po pierwszej iteracji
 
+Testy i kryteria akceptacji należą również do pracy z pojedynczą umiejętnością; same w sobie nie wymagają `/ralph`. Jeśli potrzebujesz koordynacji między domenami lub wyraźnie zleconego procesu jakości, zobacz [przewodnik wyboru umiejętności i workflow](/docs/core-concepts/workflows#choosing-a-skill-or-workflow).
+
 ---
 
 ## Lista kontrolna przed uruchomieniem

@@ -5,7 +5,7 @@ description: Exemples concrets montrant comment utiliser oh-my-agent — de tach
 
 # Comment Utiliser oh-my-agent
 
-> Vous ne savez pas par ou commencer ? Tapez `/work` suivi de ce que vous voulez construire.
+> Pour un seul domaine, commencez par une compétence unique. Consultez le [guide de sélection](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) si la tâche nécessite une coordination ou un processus qualité explicite.
 
 ## Demarrage Rapide
 
@@ -13,7 +13,7 @@ description: Exemples concrets montrant comment utiliser oh-my-agent — de tach
 2. Les skills sont auto-detectes depuis `.agents/skills/`
 3. Commencez a discuter — decrivez ce que vous voulez
 
-C'est tout. oh-my-agent s'occupe du reste.
+Les tâches dans un seul domaine ne nécessitent aucune syntaxe particulière. Le [guide de sélection des compétences et workflows](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) vous aide à choisir entre une compétence unique, `/work`, `/orchestrate`, `/ultrawork` et `/ralph`.
 
 ---
 
@@ -40,8 +40,8 @@ Pas besoin de commandes slash. Decrivez juste ce que vous voulez.
 
 **Ce qui se passe :**
 
-1. La detection de mots-cles voit que c'est multi-domaine → suggere `/work`
-2. **Agent PM** planifie le travail : API d'auth, schema de base de donnees, UI frontend, perimetre QA
+1. Cette demande couvre plusieurs domaines. L'agent hôte peut recommander une coordination selon ce périmètre. Le hook de détection compare le texte aux mots-clés et motifs configurés ; il ne classe pas la demande par nombre de domaines. Lorsqu'il est activé, le motif anglais "Build a TODO app" peut activer `/orchestrate`. Choisissez le workflow voulu avec une commande explicite.
+2. **Agent PM** planifie le travail : API d'auth, schema de base de donnees, UI frontend, perimetre QA. Le plan est présenté et l'exécution poursuit le périmètre déjà autorisé ; seules une décision importante manquante ou une nouvelle autorisation nécessitent une confirmation.
 3. **Vous lancez les agents :**
    ```bash
    oma agent spawn backend "JWT authentication API" session-01 -w ./apps/api &
@@ -110,9 +110,10 @@ Tapez-les dans votre IDE IA pour declencher des processus structures :
 |----------|-----------------|------------------|
 | `/brainstorm` | Ideation libre et exploration | Avant de s'engager dans une approche |
 | `/plan` | Decomposition PM, contrats d'API et artefacts de plan suivis dans `docs/plans/work/` (`NNN-name.md` sequentiels, champ Status pour le cycle de vie) | Avant toute fonctionnalite complexe ; fonctionnalites complexes necessitant un suivi de progression et des journaux de decisions |
-| `/work` | Coordination multi-domaine etape par etape | Fonctionnalites couvrant plusieurs agents |
-| `/orchestrate` | Execution automatisee d'agents en parallele | Grands projets, parallelisme maximum |
+| `/work` | Planification, implémentation et QA multi-domaines étape par étape dans le périmètre autorisé | Fonctionnalités couvrant plusieurs domaines à coordonner |
+| `/orchestrate` | Charge ou crée un plan, puis délègue l'exécution parallèle avec suivi et vérification | Tâches indépendantes adaptées à une coordination parallèle automatisée |
 | `/ultrawork` | Workflow qualite 5 phases (11 portes de revue) | Livraison qualite maximum |
+| `/ralph` | Exécutions répétées d'ultrawork avec juge indépendant et garde-fous | Demande explicite de répéter l'exécution jusqu'à validation des critères mécaniques d'achèvement |
 | `/review` | Audit securite + performance + accessibilite | Avant de merger |
 | `/debug` | Debogage structure de cause racine | Enquete sur des bugs |
 | `/design` | Workflow design 7 phases → `DESIGN.md` | Construction de systemes de design |
@@ -120,6 +121,12 @@ Tapez-les dans votre IDE IA pour declencher des processus structures :
 | `/tools` | Gestion des serveurs MCP | Ajout d'outils externes |
 | `/stack-set` | Configuration du stack technique | Definition des preferences langage/framework |
 | `/deepinit` | Initialisation complete du projet | Configuration dans un codebase existant |
+
+Les portes de qualité appliquent ces règles :
+
+- **PLAN_GATE :** Plan documenté, hypothèses listées, périmètre autorisé.
+- **IMPL_GATE :** Contrôles applicables sans génération de fichiers et tests réussis, seuls les fichiers planifiés sont modifiés. Les contrôles de build ne sont exécutés que sur demande explicite.
+- **SHIP_GATE :** Tous les contrôles passent ; l'autorisation existante reste valable. La publication ou le déploiement nécessite une autorisation pour cette action.
 
 ---
 
@@ -200,7 +207,7 @@ Utilisez 3 terminaux :
 3. **Verrouillez les contrats d'abord** — lancez `/plan` avant de spawn des agents en parallele
 4. **Surveillez activement** — les dashboards detectent les problemes avant le merge
 5. **Iterez avec des re-spawns** — affinez les prompts d'agents au lieu de repartir de zero
-6. **Commencez avec `/work`** — quand vous ne savez pas quel workflow utiliser
+6. **Adaptez la coordination à la tâche.** Commencez par une compétence unique pour un seul domaine ; consultez le [guide de sélection](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) pour une coordination ou un processus qualité explicite.
 
 ---
 

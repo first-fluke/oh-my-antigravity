@@ -12,7 +12,7 @@ description: Kompleksowy przewodnik użytkowania oh-my-agent — szybki start, s
 3. Opisz czego potrzebujesz w języku naturalnym — oh-my-agent kieruje do właściwego agenta
 4. Do pracy wieloagentowej użyj `/work` lub `/orchestrate`
 
-To cały workflow. Nie potrzeba specjalnej składni do zadań jednodomenowych.
+Zadania jednodomenowe nie wymagają specjalnej składni. Skorzystaj z [przewodnika wyboru umiejętności i workflow](/docs/core-concepts/workflows#choosing-a-skill-or-workflow), aby wybrać pojedynczą umiejętność, `/work`, `/orchestrate`, `/ultrawork` lub `/ralph`.
 
 ---
 
@@ -60,13 +60,13 @@ Build a TODO app with user authentication, task CRUD, and a mobile companion app
 
 **Co się dzieje:**
 
-1. Wykrywanie słów kluczowych identyfikuje to jako wielodomenowe (frontend + backend + mobile)
-2. Jeśli nie użyłeś polecenia workflow, oh-my-agent sugeruje `/work` lub `/orchestrate`
+1. To zadanie obejmuje frontend, backend i mobile. Główny agent może na podstawie tego zakresu zaproponować sposób koordynacji.
+2. Gdy hook wykrywania słów kluczowych jest włączony, "Build a TODO app" pasuje do skonfigurowanego wzorca `/orchestrate` i może go aktywować. Hook dopasowuje tekst; nie klasyfikuje zadania jako wielodomenowego. Wybierz żądany workflow za pomocą jawnej komendy.
 
 **Używając `/work` (krok po kroku z kontrolą użytkownika):**
 
 3. **Krok 1 — Agent PM planuje:** Identyfikuje domeny, definiuje kontrakty API, tworzy priorytetyzowany rozkład zadań, zapisuje do `.agents/results/plan-{sessionId}.json`
-4. **Krok 2 — Przeglądasz i potwierdzasz plan**
+4. **Krok 2 — Przegląd planu:** Agent przedstawia plan i kontynuuje w ramach dotychczasowej zgody, pytając tylko o brakującą istotną decyzję lub nową zgodę.
 5. **Krok 3 — Agenci uruchamiani wg priorytetu** (P0 równolegle, potem P1...)
 6. **Krok 4 — Agent QA przegląda:** Bezpieczeństwo OWASP Top 10, wydajność, dostępność WCAG 2.1 AA, zgodność kontraktów API
 7. **Krok 5 — Iteracja:** Jeśli QA znajdzie problemy CRITICAL, ponowne uruchomienie odpowiedzialnego agenta z raportem QA.
@@ -145,8 +145,8 @@ oma agent spawn qa "Review notification feature across all platforms" session-no
 
 | Polecenie | Typ | Co robi | Kiedy używać |
 |---------|------|-------------|-------------|
-| `/orchestrate` | Trwały | Automatyczne równoległe wykonanie agentów z monitoringiem i pętlami weryfikacji | Duże projekty wymagające maksymalnej równoległości |
-| `/work` | Trwały | Krokowa koordynacja wielodomenowa z zatwierdzeniem użytkownika | Funkcjonalności obejmujące wielu agentów z kontrolą |
+| `/orchestrate` | Trwały | Ładuje lub tworzy plan, a następnie deleguje wykonanie równoległe z monitorowaniem i weryfikacją | Niezależne zadania nadające się do automatycznej koordynacji równoległej |
+| `/work` | Trwały | Wielodomenowe planowanie, implementacja i QA krok po kroku w zatwierdzonym zakresie | Funkcjonalności obejmujące wiele domen, które wymagają koordynacji |
 | `/ultrawork` | Trwały | 5-fazowy, 17-krokowy workflow jakości z 11 punktami kontrolnymi | Maksymalna jakość dostarczenia, kod krytyczny dla produkcji |
 | `/plan` | Nietrwały | Rozkład zadań sterowany przez PM, kontrakty API oraz śledzone artefakty planu w `docs/plans/work/` (sekwencyjne `NNN-name.md`, pole Status dla cyklu życia) | Przed złożoną pracą wieloagentową; złożone funkcjonalności wymagające śledzonego postępu i dzienników decyzji |
 | `/brainstorm` | Nietrwały | Ideacja z priorytetem projektowania z 2-3 propozycjami podejść | Przed zobowiązaniem się do podejścia implementacyjnego |
@@ -157,6 +157,7 @@ oma agent spawn qa "Review notification feature across all platforms" session-no
 | `/scm` | Nietrwały | Konwencjonalny commit z automatycznym wykryciem typu/zakresu | Po zakończeniu zmian w kodzie |
 | `/tools` | Nietrwały | Zarządzanie widocznością narzędzi MCP (włączanie/wyłączanie grup) | Kontrola dostępnych narzędzi MCP |
 | `/stack-set` | Nietrwały | Automatyczne wykrywanie stosu technologicznego i generowanie referencji backend | Konfiguracja konwencji kodowania per język |
+| `/ralph` | Trwały | Powtarzane wykonanie ultrawork z niezależnym judge i zabezpieczeniami pętli | Wyraźne polecenie powtarzania wykonania do spełnienia kryteriów ukończenia sprawdzalnych automatycznie |
 
 ---
 
@@ -186,7 +187,7 @@ oh-my-agent wykrywa słowa kluczowe workflow w 11 językach:
 3. **Zablokuj kontrakty API przed uruchomieniem agentów implementacyjnych.** Uruchom `/plan` najpierw.
 4. **Aktywnie monitoruj.** Otwórz terminal z panelem aby wcześnie wychwycić nieudanych agentów.
 5. **Iteruj przez ponowne uruchomienia.** Nie zaczynaj od nowa — uruchom ponownie z kontekstem korekty.
-6. **Zacznij od `/work` gdy nie masz pewności.** Prowadzi krok po kroku.
+6. **Dopasuj koordynację do zadania.** Dla jednej domeny zacznij od pojedynczej umiejętności; skorzystaj z [przewodnika wyboru](/docs/core-concepts/workflows#choosing-a-skill-or-workflow), gdy zadanie wymaga koordynacji lub wyraźnie zleconego procesu jakości.
 7. **Używaj `/brainstorm` przed `/plan` dla niejasnych pomysłów.**
 8. **Uruchom `/deepinit` na nowych bazach kodu.** Tworzy AGENTS.md i ARCHITECTURE.md.
 9. **Skonfiguruj `model_preset`.** Użyj `claude`, `antigravity` lub `mixed`, aby kierować agentów do właściwego CLI. Dodaj nadpisania w sekcji `agents:` dla precyzyjnej kontroli. Zobacz [Modele per agent](./per-agent-models.md).

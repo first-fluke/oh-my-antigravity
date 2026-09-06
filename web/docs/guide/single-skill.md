@@ -33,6 +33,8 @@ Use this when your task meets ALL of these criteria:
 - The feature spans frontend, backend, and database
 - Scope grows beyond one domain after the first iteration
 
+Tests and acceptance criteria are part of single-skill work too; they do not by themselves require `/ralph`. For coordination across domains or an explicitly requested quality process, see the [skill and workflow selection guide](/docs/core-concepts/workflows#choosing-a-skill-or-workflow).
+
 ---
 
 ## Preflight checklist

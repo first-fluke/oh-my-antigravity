@@ -5,7 +5,7 @@ description: Praxisbeispiele, die zeigen, wie man oh-my-agent nutzt — von einf
 
 # Wie Man oh-my-agent Benutzt
 
-> Nicht sicher, wo du anfangen sollst? Tippe `/work` gefolgt von dem, was du bauen willst.
+> Für eine einzelne Domäne starte mit einem Skill. Nutze die [Auswahlhilfe](/docs/core-concepts/workflows#choosing-a-skill-or-workflow), wenn die Aufgabe Koordination oder einen ausdrücklichen Qualitätsprozess braucht.
 
 ## Schnellstart
 
@@ -13,7 +13,7 @@ description: Praxisbeispiele, die zeigen, wie man oh-my-agent nutzt — von einf
 2. Skills werden automatisch aus `.agents/skills/` erkannt
 3. Fang an zu chatten — beschreib, was du willst
 
-Das ist alles. oh-my-agent kuemmert sich um den Rest.
+Aufgaben in einer einzelnen Domäne brauchen keine besondere Syntax. Die [Auswahlhilfe für Skills und Workflows](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) hilft dir, zwischen einem einzelnen Skill, `/work`, `/orchestrate`, `/ultrawork` und `/ralph` zu wählen.
 
 ---
 
@@ -40,8 +40,8 @@ Keine Slash-Befehle noetig. Beschreib einfach, was du willst.
 
 **Was passiert:**
 
-1. Keyword-Erkennung sieht, dass es multi-domain ist → schlaegt `/work` vor
-2. **PM-Agent** plant die Arbeit: Auth-API, Datenbankschema, Frontend-UI, QA-Umfang
+1. Die Anfrage umfasst mehrere Domänen. Der Host-Agent kann anhand dieses Umfangs eine Koordination empfehlen. Der Erkennungs-Hook gleicht Text mit konfigurierten Keywords und Mustern ab; er klassifiziert nicht die Anzahl der Domänen. Ist er aktiviert, kann das englische Muster "Build a TODO app" `/orchestrate` aktivieren. Wähle den gewünschten Workflow mit einem ausdrücklichen Befehl.
+2. **PM-Agent** plant die Arbeit: Auth-API, Datenbankschema, Frontend-UI, QA-Umfang. Der Agent stellt den Plan vor und fährt im bereits autorisierten Umfang fort. Er fragt nur nach wesentlichen fehlenden Entscheidungen oder einer neuen Autorisierung.
 3. **Du startest Agenten:**
    ```bash
    oma agent spawn backend "JWT authentication API" session-01 -w ./apps/api &
@@ -110,9 +110,10 @@ Tippe diese in deiner KI-IDE, um strukturierte Prozesse auszuloesen:
 |--------|-----------|---------------|
 | `/brainstorm` | Freie Ideenfindung und Erkundung | Bevor du dich auf einen Ansatz festlegst |
 | `/plan` | PM-Aufgabenzerlegung, API-Vertraege und nachverfolgte Plan-Artefakte in `docs/plans/work/` (sequentiell `NNN-name.md`, `Status`-Feld fuer den Lebenszyklus) | Vor dem Start jedes komplexen Features; auch fuer komplexe Features, die nachverfolgten Fortschritt brauchen |
-| `/work` | Schrittweise Multi-Domain-Koordination | Features, die mehrere Agenten umfassen |
-| `/orchestrate` | Automatisierte parallele Agenten-Ausfuehrung | Grosse Projekte, maximale Parallelitaet |
+| `/work` | Schrittweise Planung, Implementierung und QA über mehrere Domänen im autorisierten Umfang | Features über mehrere Domänen hinweg, die Koordination brauchen |
+| `/orchestrate` | Lädt oder erstellt einen Plan und delegiert parallele Ausführung mit Überwachung und Verifikation | Unabhängige Aufgaben für automatisierte parallele Koordination |
 | `/ultrawork` | 5-Phasen-Qualitaets-Workflow (11 Review-Gates) | Maximale Qualitaetsauslieferung |
+| `/ralph` | Wiederholte ultrawork-Ausführung mit unabhängigem Judge und Schutzvorrichtungen | Ausdrücklicher Auftrag zur Wiederholung bis zum Bestehen mechanischer Abschlusskriterien |
 | `/review` | Sicherheits- + Performance- + Barrierefreiheits-Audit | Vor dem Merge |
 | `/debug` | Strukturiertes Grundursachen-Debugging | Bugs untersuchen |
 | `/design` | 7-Phasen-Design-Workflow → `DESIGN.md` | Design-Systeme aufbauen |
@@ -120,6 +121,12 @@ Tippe diese in deiner KI-IDE, um strukturierte Prozesse auszuloesen:
 | `/tools` | MCP-Server-Verwaltung | Externe Tools hinzufuegen |
 | `/stack-set` | Tech-Stack-Konfiguration | Sprach-/Framework-Praeferenzen festlegen |
 | `/deepinit` | Vollstaendige Projektinitialisierung | Setup in einer bestehenden Codebase |
+
+Für die Qualitäts-Gates gelten diese Regeln:
+
+- **PLAN_GATE:** Plan dokumentiert, Annahmen aufgelistet, Umfang autorisiert.
+- **IMPL_GATE:** Anwendbare Prüfungen ohne Dateiausgabe und Tests bestehen, nur geplante Dateien geändert. Build-Prüfungen werden nur auf ausdrücklichen Wunsch ausgeführt.
+- **SHIP_GATE:** Alle Prüfungen bestehen; die vorhandene Autorisierung gilt weiter. Veröffentlichung oder Deployment erfordert eine Autorisierung für diese Aktion.
 
 ---
 
@@ -200,7 +207,7 @@ Verwende 3 Terminals:
 3. **Sperre Vertraege zuerst** — fuehre `/plan` aus, bevor du parallele Agenten startest
 4. **Ueberwache aktiv** — Dashboards erkennen Probleme vor dem Merge
 5. **Iteriere mit Re-Spawns** — verfeinere Agenten-Prompts, statt von vorne zu beginnen
-6. **Starte mit `/work`** — wenn du nicht weisst, welchen Workflow du nutzen sollst
+6. **Passe die Koordination an die Aufgabe an.** Starte bei einer Domäne mit einem einzelnen Skill; nutze die [Auswahlhilfe](/docs/core-concepts/workflows#choosing-a-skill-or-workflow), wenn Koordination oder ein ausdrücklicher Qualitätsprozess nötig ist.
 
 ---
 

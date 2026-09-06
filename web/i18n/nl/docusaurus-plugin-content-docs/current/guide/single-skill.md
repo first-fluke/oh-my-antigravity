@@ -24,6 +24,8 @@ Gebruik dit wanneer je taak aan ALLE criteria voldoet:
 - De functie frontend, backend en database beslaat
 - Scope groeit voorbij een domein na de eerste iteratie
 
+Tests en acceptatiecriteria horen ook bij werk met één skill; daarvoor is op zichzelf geen `/ralph` nodig. Gebruik de [keuzegids voor skills en workflows](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) voor coördinatie tussen domeinen of een expliciet gevraagd kwaliteitsproces.
+
 ---
 
 ## Preflight checklist

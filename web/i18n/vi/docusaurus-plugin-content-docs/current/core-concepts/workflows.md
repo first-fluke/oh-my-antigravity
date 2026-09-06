@@ -11,6 +11,28 @@ Có 16 workflow, trong đó 4 là liên tục (duy trì trạng thái và không
 
 ---
 
+## Chọn skill hoặc workflow {#choosing-a-skill-or-workflow}
+
+Chọn theo nhu cầu điều phối và xác minh của task. Nếu đã chọn workflow, hãy làm theo workflow đó; tiếp tục workflow đang chạy trừ khi bạn chủ động hủy hoặc đổi. Với task mới chưa chọn workflow, dùng hướng dẫn sau:
+
+| Nhu cầu của task | Lựa chọn | Ví dụ |
+|---|---|---|
+| Một lĩnh vực, không cần phối hợp giữa các agent | [Skill đơn](/docs/guide/single-skill) | Thêm API endpoint và kiểm thử validation |
+| Nhiều lĩnh vực, cần lập kế hoạch, triển khai và QA từng bước | `/work` | Điều phối thay đổi API cùng các client web và mobile |
+| Tự động giao task độc lập để chạy song song | `/orchestrate` | Triển khai task backend và frontend song song sau khi giải quyết phụ thuộc |
+| Yêu cầu rõ ràng về quy trình chất lượng toàn diện | `/ultrawork` | Thực hiện đầy đủ các bước lập kế hoạch, triển khai, xác minh, tinh chỉnh và đánh giá mức độ sẵn sàng phát hành |
+| Yêu cầu rõ ràng về việc lặp lại thực thi đến khi đạt tiêu chí kiểm chứng được bằng máy | `/ralph` | Lặp lại triển khai và xác minh độc lập đến khi các kiểm tra hồi quy đã chỉ định đều pass, trong giới hạn bảo vệ của vòng lặp |
+
+`/orchestrate` tải kế hoạch dùng được hoặc tạo kế hoạch qua `/plan` trước khi spawn agent. Bạn không cần chạy `/plan` trước. Vì vậy, việc đã có kế hoạch không phải là điểm phân biệt `/work` và `/orchestrate`; hãy chọn theo cách bạn muốn điều phối công việc. Cả hai đều có thể chạy task độc lập song song.
+
+Tiêu chí chấp nhận và test cũng thuộc công việc dùng skill đơn. Chỉ có các tiêu chí này không có nghĩa là cần `/ralph`. Mỗi lần lặp Ralph chạy toàn bộ quy trình ultrawork và một judge độc lập, nên hãy chọn khi bạn muốn lặp lại quy trình xác minh đó. Vòng lặp có thể dừng khi còn công việc chưa hoàn thành hoặc bị chặn nếu cơ chế bảo vệ áp dụng.
+
+Bảng này hướng dẫn lựa chọn, không phải bộ định tuyến workflow tự động. Agent chính có thể đề xuất cách làm phù hợp; việc đề xuất hoặc giải thích workflow không khởi chạy nó. Lệnh slash chọn workflow một cách tường minh. Khi hook phát hiện từ khóa được bật, việc khớp từ khóa hoặc mẫu đã cấu hình cũng có thể kích hoạt workflow, tùy bộ lọc câu hỏi thông tin. Bộ phát hiện không phân loại số lĩnh vực, kiểm tra kế hoạch đã sẵn sàng hay dùng bảng này làm thuật toán ưu tiên.
+
+Việc đánh giá kế hoạch kế thừa quyền đã được cấp cho task. Agent chỉ hỏi khi thiếu quyết định quan trọng hoặc cần thực hiện hành động ngoài phạm vi đó. Đánh giá mức độ sẵn sàng phát hành không tự cấp quyền xuất bản hoặc triển khai.
+
+---
+
 ## Workflow liên tục
 
 Workflow liên tục tiếp tục chạy cho đến khi tất cả task hoàn thành. Chúng duy trì trạng thái trong `.agents/state/` và đưa lại ngữ cảnh `[OMA PERSISTENT MODE: ...]` vào mỗi tin nhắn người dùng cho đến khi được vô hiệu hóa tường minh.
@@ -30,11 +52,19 @@ Workflow liên tục tiếp tục chạy cho đến khi tất cả task hoàn th
 
 Danh sách trắng danh từ (15): app, api, service, server, cli, tool, website, dashboard, system, feature, backend, frontend, prototype, mvp, bot.
 
+**Tải hoặc tạo kế hoạch:** Kiểm tra `.agents/results/plan-{sessionId}.json`, rồi đến `plan-*.json` mới nhất. Nếu không có kế hoạch, hoặc task thiếu agent, tier ưu tiên, phụ thuộc hay tiêu chí chấp nhận, giao cho `/plan` tạo kế hoạch inline với cùng session ID. Trình bày kế hoạch và kế thừa quyền hiện có; trước khi giao task, chỉ hỏi khi thiếu quyết định quan trọng hoặc cần quyền mới.
+
+**Khởi tạo phiên:** Tải `oma-config.yaml`, hiển thị bảng ánh xạ CLI, dùng lại session ID từ lúc tạo kế hoạch hoặc tạo ID mới (`session-YYYYMMDD-HHMMSS`). Tạo `orchestrator-session.md` và `task-board.md` trong bộ nhớ.
+
 ### /work
 
-**Mô tả:** Điều phối đa lĩnh vực từng bước. PM lập kế hoạch trước, sau đó agent thực thi với xác nhận người dùng ở mỗi cổng, tiếp theo đánh giá QA và vòng lặp khắc phục.
+**Mô tả:** Điều phối đa lĩnh vực từng bước. PM lập kế hoạch trước, sau đó agent thực thi trong phạm vi được cho phép, tiếp theo là đánh giá QA và khắc phục vấn đề.
 
 **Liên tục:** Có. File trạng thái: `.agents/state/work-state.json`.
+
+**Đánh giá kế hoạch:** Trình bày kế hoạch và tiếp tục trong phạm vi quyền hiện có. Chỉ hỏi khi thiếu quyết định quan trọng hoặc cần quyền mới.
+
+**Khi dùng:** Tính năng trải nhiều lĩnh vực cần điều phối lập kế hoạch, triển khai và QA từng bước.
 
 ### /ultrawork
 
@@ -52,11 +82,24 @@ Danh sách trắng danh từ (15): app, api, service, server, cli, tool, website
 | **REFINE** | 9-13 | Agent Debug (spawn) | Tách file, Tái sử dụng, Tác động lan truyền, Nhất quán, Dead code |
 | **SHIP** | 14-17 | Agent QA (spawn) | Chất lượng mã (lint/coverage), UX Flow, Vấn đề liên quan, Sẵn sàng triển khai |
 
+**Các cổng về kế hoạch, triển khai và phát hành:**
+- **PLAN_GATE:** Kế hoạch được ghi lại, giả định được liệt kê, các phương án được cân nhắc, đánh giá chống over-engineering hoàn tất và phạm vi công việc được cho phép.
+- **IMPL_GATE:** Các kiểm tra áp dụng không sinh file đầu ra và test đều pass, chỉ sửa file trong kế hoạch, ghi Quality Score ban đầu nếu có đo. Chỉ chạy kiểm tra build khi được yêu cầu rõ ràng.
+- **SHIP_GATE:** Kiểm tra chất lượng và UX đều pass, vấn đề liên quan được giải quyết, checklist triển khai hoàn tất. Nếu có đo, Quality Score cuối phải >= 75 và không giảm. Kế thừa quyền hiện có; xuất bản hoặc triển khai cần quyền cho chính hành động đó.
+
 ### /ralph
 
-**Mô tả:** Vòng lặp thực thi tự tham chiếu liên tục. Bọc ultrawork với verifier độc lập kiểm tra tiêu chí hoàn thành sau mỗi lần lặp. Tiếp tục lặp cho đến khi tất cả tiêu chí pass hoặc bảo vệ kích hoạt.
+**Mô tả:** Vòng lặp thực thi tự tham chiếu liên tục. Bọc ultrawork với verifier độc lập kiểm tra tiêu chí hoàn thành sau mỗi lần lặp. Báo cáo hoàn thành toàn bộ khi mọi tiêu chí đều pass, hoàn thành một phần khi chỉ còn tiêu chí đã pass và tiêu chí bị chặn, hoặc dừng khi cơ chế bảo vệ kích hoạt.
 
 **Liên tục:** Có. File trạng thái: `.agents/state/ralph-state.json`.
+
+**Khởi tạo và đánh giá:** Tải các tài nguyên cần thiết (context-loading, giao thức bộ nhớ, giao thức judge). Định nghĩa và ghi lại tiêu chí hoàn thành kiểm chứng được bằng máy, chẳng hạn assertion của test, kiểm tra kiểu không sinh file đầu ra, mã thoát hoặc sự tồn tại của file. Chỉ đưa kiểm tra build vào khi được yêu cầu rõ ràng. Trình bày tiêu chí và tiếp tục trong phạm vi được cho phép, với `max_iterations: 5`. Judge độc lập đối chiếu từng tiêu chí với trạng thái thực tế bằng các kiểm tra được cho phép và kiểm tra sự tồn tại của file. Ghi lại bằng chứng cùng trạng thái PASS, FAIL, REGRESSED hoặc BLOCKED.
+
+**Quyết định:** Nếu mọi tiêu chí đều PASS, báo cáo hoàn thành toàn bộ. Nếu chỉ còn PASS và BLOCKED, báo cáo hoàn thành một phần. Nếu có FAIL hoặc REGRESSED, chuyển ngữ cảnh thất bại sang lần lặp tiếp theo trong giới hạn bảo vệ. Vòng lặp dừng khi `current_iteration >= max_iterations` (mặc định 5), hoặc cùng một tiêu chí thất bại 3 lần liên tiếp với cùng nguyên nhân gốc.
+
+**Khác biệt chính so với /ultrawork:** Ultrawork chạy quy trình 5 giai đoạn và thử lại khi một cổng không đạt. Ralph bọc ultrawork trong vòng lặp thử lại, với judge độc lập xác minh việc hoàn thành. Vòng lặp kết thúc bằng báo cáo hoàn thành toàn bộ, hoàn thành một phần do công việc bị chặn, hoặc báo cáo dừng theo cơ chế bảo vệ.
+
+**Khi dùng:** Khi bạn yêu cầu rõ ràng việc lặp lại thực thi và xác minh độc lập theo tiêu chí hoàn thành kiểm chứng được bằng máy. Chỉ có test không có nghĩa là cần Ralph; hãy tính đến toàn bộ quy trình ultrawork trong mỗi lần lặp và các cơ chế bảo vệ.
 
 ---
 
@@ -265,14 +308,19 @@ Trong khi workflow liên tục đang hoạt động, hook `persistent-mode.ts` �
 
 ## Chuỗi workflow điển hình
 
-### Tính năng nhanh
+### Tính năng đơn lĩnh vực
 ```
-/plan → xem kết quả → /exec-plan
+Describe the task → relevant skill → implement → focused verification
 ```
 
 ### Dự án đa lĩnh vực phức tạp
 ```
-/work → PM lập kế hoạch → người dùng xác nhận → agent spawn → QA đánh giá → sửa vấn đề → phát hành
+/work → PM plans → review within authorized scope → agents spawn → QA reviews → fix issues → report
+```
+
+### Tự động triển khai song song
+```
+/orchestrate → load or create plan → resolve dependencies → spawn independent tasks → verify → report
 ```
 
 ### Phân phối chất lượng tối đa
@@ -290,7 +338,7 @@ Trong khi workflow liên tục đang hoạt động, hook `persistent-mode.ts` �
 /brainstorm → tài liệu thiết kế → /plan → phân tách task → /orchestrate → triển khai song song → /review → /scm
 ```
 
-### Hoàn thành đảm bảo
+### Lặp lại thực thi với xác minh độc lập
 ```
-/ralph → định nghĩa tiêu chí → vòng lặp ultrawork → judge xác minh → lặp lại nếu cần → tất cả tiêu chí pass → hoàn thành
+/ralph → define criteria → ultrawork → judge → repeat as needed → completion, partial completion, or safeguard report
 ```

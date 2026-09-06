@@ -24,6 +24,8 @@ Dùng khi task đáp ứng TẤT CẢ tiêu chí:
 - Tính năng trải frontend, backend và database
 - Phạm vi mở rộng quá một lĩnh vực sau lần lặp đầu
 
+Test và tiêu chí chấp nhận cũng thuộc công việc dùng skill đơn; bản thân chúng không đòi hỏi `/ralph`. Khi cần điều phối nhiều lĩnh vực hoặc một quy trình chất lượng được yêu cầu rõ ràng, xem [hướng dẫn chọn skill và workflow](/docs/core-concepts/workflows#choosing-a-skill-or-workflow).
+
 ---
 
 ## Checklist preflight

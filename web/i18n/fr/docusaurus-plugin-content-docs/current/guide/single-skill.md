@@ -33,6 +33,8 @@ Utilisez cela lorsque votre tâche remplit TOUS ces critères :
 - La fonctionnalité couvre frontend, backend et base de données
 - Le périmètre dépasse un seul domaine après la première itération
 
+Les tests et les critères d'acceptation font aussi partie du travail avec une compétence unique ; ils ne nécessitent pas à eux seuls `/ralph`. Pour coordonner plusieurs domaines ou demander explicitement un processus qualité, consultez le [guide de sélection des compétences et workflows](/docs/core-concepts/workflows#choosing-a-skill-or-workflow).
+
 ---
 
 ## Checklist préalable

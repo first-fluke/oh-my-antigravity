@@ -33,6 +33,8 @@ Use quando sua tarefa atende a TODOS estes critérios:
 - A funcionalidade abrange frontend, backend e banco de dados
 - O escopo cresce além de um domínio após a primeira iteração
 
+Testes e critérios de aceitação também fazem parte do trabalho com skill única; por si só, não exigem `/ralph`. Para coordenação entre domínios ou um processo de qualidade solicitado explicitamente, consulte o [guia de escolha de skills e workflows](/docs/core-concepts/workflows#choosing-a-skill-or-workflow).
+
 ---
 
 ## Checklist de preflight

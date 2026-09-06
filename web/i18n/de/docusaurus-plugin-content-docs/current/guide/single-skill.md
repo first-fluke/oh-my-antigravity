@@ -33,6 +33,8 @@ Verwenden Sie dies, wenn Ihre Aufgabe ALLE diese Kriterien erfüllt:
 - Das Feature Frontend, Backend und Datenbank umfasst
 - Der Umfang nach der ersten Iteration über eine Domäne hinauswächst
 
+Tests und Akzeptanzkriterien gehören auch zur Arbeit mit einem einzelnen Skill; allein dafür ist `/ralph` nicht nötig. Für die Koordination über mehrere Domänen oder einen ausdrücklich angeforderten Qualitätsprozess nutzen Sie die [Auswahlhilfe für Skills und Workflows](/docs/core-concepts/workflows#choosing-a-skill-or-workflow).
+
 ---
 
 ## Preflight-Checkliste

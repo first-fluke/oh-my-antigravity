@@ -33,6 +33,8 @@ Usa esto cuando tu tarea cumpla TODOS estos criterios:
 - La funcionalidad abarca frontend, backend y base de datos
 - El alcance crece mas alla de un dominio despues de la primera iteracion
 
+Las pruebas y los criterios de aceptación también forman parte del trabajo con una habilidad individual; por sí solos no requieren `/ralph`. Para coordinar varios dominios o aplicar un proceso de calidad solicitado explícitamente, consulta la [guía de selección de habilidades y flujos de trabajo](/docs/core-concepts/workflows#choosing-a-skill-or-workflow).
+
 ---
 
 ## Lista de verificacion previa

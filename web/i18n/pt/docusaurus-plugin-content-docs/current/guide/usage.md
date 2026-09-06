@@ -12,7 +12,7 @@ description: "Guia de uso abrangente do oh-my-agent — início rápido, exemplo
 3. Descreva o que você quer em linguagem natural — oh-my-agent roteia para o agente correto
 4. Para trabalho multi-agente, use `/work` ou `/orchestrate`
 
-Esse é todo o workflow. Nenhuma sintaxe especial é necessária para tarefas de domínio único.
+Tarefas de domínio único não precisam de sintaxe especial. Use o [guia de escolha de skills e workflows](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) para escolher entre uma skill única, `/work`, `/orchestrate`, `/ultrawork` e `/ralph`.
 
 ---
 
@@ -60,8 +60,8 @@ Build a TODO app with user authentication, task CRUD, and a mobile companion app
 
 **O que acontece:**
 
-1. A detecção de palavras-chave identifica isso como multi-domínio (frontend + backend + mobile)
-2. Se você não usou um comando de workflow, oh-my-agent sugere `/work` ou `/orchestrate`
+1. Esta solicitação abrange trabalho de frontend, backend e mobile. O agente principal pode usar esse escopo para recomendar uma abordagem de coordenação.
+2. Com o hook de detecção de palavras-chave habilitado, "Build a TODO app" corresponde a um padrão configurado de `/orchestrate` e pode ativá-lo. O hook busca correspondências no texto; não classifica a solicitação como multidomínio. Use um comando explícito para selecionar o workflow desejado.
 
 **Usando `/work` (passo a passo com controle do usuário):**
 
@@ -78,7 +78,7 @@ Build a TODO app with user authentication, task CRUD, and a mobile companion app
      - P2: QA review
    - Salva em `.agents/results/plan-{sessionId}.json`
 
-4. **Step 2 — Você revisa e confirma o plano**
+4. **Step 2 — Revisar o plano:** O agente apresenta o plano e continua com a autorização existente, perguntando apenas quando falta uma decisão relevante ou uma nova autorização.
 
 5. **Step 3 — Agentes spawnados por prioridade:**
    ```bash
@@ -203,13 +203,13 @@ oma stats get
 - Step 2: Revisão do Plano — verificação de completude
 - Step 3: Meta Revisão — auto-verificar se a revisão foi suficiente
 - Step 4: Revisão de Over-Engineering — foco em MVP, sem complexidade desnecessária
-- PLAN_GATE: Plano documentado, suposições listadas, usuário confirma
+- PLAN_GATE: Plano documentado, suposições listadas, escopo autorizado
 
 **Fase 2 — IMPL (Step 5, Agentes Dev spawnados):**
 - Agente backend implementa integração Stripe (webhooks, idempotência, tratamento de erros)
 - Agente frontend constrói fluxo de checkout e UI de status de pagamento
 - Step 5.2: Medir baseline Quality Score (testes, lint, typecheck)
-- IMPL_GATE: Build tem sucesso, testes passam, apenas arquivos planejados modificados
+- IMPL_GATE: Verificações aplicáveis sem geração de arquivos e testes passam, apenas arquivos planejados são modificados; verificações de build são executadas apenas quando solicitadas explicitamente
 
 **Fase 3 — VERIFY (Steps 6-8, Agente QA spawnado):**
 - Step 6: Revisão de Alinhamento — implementação corresponde ao plano?
@@ -230,7 +230,7 @@ oma stats get
 - Step 15: Verificação de Fluxo UX — jornada end-to-end de pagamento do usuário
 - Step 16: Revisão de Problemas Relacionados — verificação final de impacto em cascata
 - Step 17: Prontidão para Deploy — gerenciamento de secrets, scripts de migração, plano de rollback
-- SHIP_GATE: Todas as verificações passam, usuário dá aprovação final
+- SHIP_GATE: Todas as verificações passam; reutilizar a autorização existente. Publicar ou fazer deploy exige autorização para essa ação.
 
 ---
 
@@ -238,8 +238,8 @@ oma stats get
 
 | Comando | Tipo | O Que Faz | Quando Usar |
 |---------|------|----------|-------------|
-| `/orchestrate` | Persistente | Execução automatizada de agentes em paralelo com monitoramento e loops de verificação | Grandes projetos precisando de máximo paralelismo |
-| `/work` | Persistente | Coordenação multi-domínio passo a passo com aprovação do usuário em cada portão | Funcionalidades abrangendo múltiplos agentes onde você quer controle |
+| `/orchestrate` | Persistente | Carrega ou cria um plano e delega a execução paralela com monitoramento e verificação | Tarefas independentes adequadas à coordenação paralela automatizada |
+| `/work` | Persistente | Planejamento, implementação e QA passo a passo em vários domínios dentro do escopo autorizado | Funcionalidades que abrangem múltiplos domínios e precisam de entrega coordenada |
 | `/ultrawork` | Persistente | Workflow de qualidade de 5 fases, 17 etapas com 11 checkpoints de revisão | Entrega de qualidade máxima, código crítico para produção |
 | `/plan` | Não-persistente | Breakdown de tarefas dirigido pelo PM, contratos de API e artefatos de plano rastreados em `docs/plans/work/` (sequencial `NNN-name.md`, campo Status para ciclo de vida) | Antes de qualquer trabalho multi-agente complexo; funcionalidades complexas precisando de progresso rastreado e logs de decisão |
 | `/brainstorm` | Não-persistente | Ideação orientada por design com propostas de 2-3 abordagens | Antes de se comprometer com uma abordagem de implementação |
@@ -250,6 +250,7 @@ oma stats get
 | `/scm` | Não-persistente | Commit convencional com auto-detecção de tipo/escopo e divisão por funcionalidade | Após completar mudanças de código |
 | `/tools` | Não-persistente | Gerenciamento de visibilidade de ferramentas MCP (enable/disable grupos) | Controlar quais ferramentas MCP agentes podem usar |
 | `/stack-set` | Não-persistente | Auto-detectar stack tecnológico do projeto e gerar referências backend | Configurar convenções de codificação específicas de linguagem |
+| `/ralph` | Persistente | Execução repetida de ultrawork com um juiz independente e salvaguardas do loop | Solicitações explícitas de repetir a execução até que critérios mecânicos de conclusão sejam atendidos |
 
 ---
 
@@ -392,7 +393,7 @@ A flag `-w` em `agent spawn` isola um agente em um diretório específico. Isso 
 
 5. **Itere com re-spawns.** Se a saída de um agente não está correta, re-spawne com a tarefa original mais contexto de correção. Não recomece.
 
-6. **Comece com `/work` quando inseguro.** Fornece orientação passo a passo com confirmação do usuário em cada portão.
+6. **Ajuste a coordenação à tarefa.** Comece com uma skill única para um domínio; use o [guia de escolha](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) quando a tarefa precisar de coordenação ou de um processo explícito de qualidade.
 
 7. **Use `/brainstorm` antes de `/plan` para ideias ambíguas.** Brainstorm clarifica intenção e abordagem antes do agente PM decompor em tarefas.
 

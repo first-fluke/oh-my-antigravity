@@ -12,7 +12,7 @@ description: Comprehensive usage guide for oh-my-agent, covering quick start, de
 3. Describe what you want in natural language. oh-my-agent routes to the right agent
 4. For multi-agent work, use `/work` or `/orchestrate`
 
-Single-domain tasks need no special syntax.
+Single-domain tasks need no special syntax. Use the [skill and workflow selection guide](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) to choose between a single skill, `/work`, `/orchestrate`, `/ultrawork`, and `/ralph`.
 
 ---
 
@@ -62,8 +62,8 @@ Build a TODO app with user authentication, task CRUD, and a mobile companion app
 
 **What happens:**
 
-1. Keyword detection identifies this as multi-domain (frontend + backend + mobile)
-2. If you have not used a workflow command, oh-my-agent suggests `/work` or `/orchestrate`
+1. This request spans frontend, backend, and mobile work. The host agent can use that scope to recommend a coordination approach.
+2. With the keyword-detection hook enabled, "Build a TODO app" matches a configured `/orchestrate` pattern and can activate it. The hook matches text; it does not classify the request as multi-domain. Use an explicit command to select the workflow you want.
 
 **Using `/work` (step-by-step with user control):**
 
@@ -80,7 +80,7 @@ Build a TODO app with user authentication, task CRUD, and a mobile companion app
      - P2: QA review
    - Saves to `.agents/results/plan-{sessionId}.json`
 
-4. **Step 2, You review and confirm the plan**
+4. **Step 2, Review the plan:** The agent presents the plan and continues within existing authorization, asking only for a material missing decision or new authorization.
 
 5. **Step 3, Agents spawn by priority:**
    ```bash
@@ -218,13 +218,13 @@ Cross-vendor tasks still use `oma agent spawn`.
 - Step 2: Plan Review (completeness check; are all requirements mapped?)
 - Step 3: Meta Review (self-verify the review was sufficient)
 - Step 4: Over-Engineering Review (MVP focus, no unnecessary complexity)
-- PLAN_GATE: Plan documented, assumptions listed, user confirms
+- PLAN_GATE: Plan documented, assumptions listed, scope authorized
 
 **Phase 2, IMPL (Step 5, Dev Agents spawned):**
 - Backend agent implements Stripe integration (webhooks, idempotency, error handling)
 - Frontend agent builds checkout flow and payment status UI
 - Step 5.2: Measure baseline Quality Score (tests, lint, typecheck)
-- IMPL_GATE: Build succeeds, tests pass, only planned files modified
+- IMPL_GATE: Applicable non-emitting checks and tests pass, only planned files modified; build checks run only when explicitly requested
 
 **Phase 3, VERIFY (Steps 6-8, QA Agent spawned):**
 - Step 6: Alignment Review (does implementation match the plan?)
@@ -245,7 +245,7 @@ Cross-vendor tasks still use `oma agent spawn`.
 - Step 15: UX Flow Verification (end-to-end payment user journey)
 - Step 16: Related Issues Review (final cascade impact check)
 - Step 17: Deployment Readiness (secrets management, migration scripts, rollback plan)
-- SHIP_GATE: All checks pass, user gives final approval
+- SHIP_GATE: All checks pass; reuse existing authorization. Publishing or deployment requires authorization for that action.
 
 ---
 
@@ -253,8 +253,8 @@ Cross-vendor tasks still use `oma agent spawn`.
 
 | Command | Type | What It Does | When to Use |
 |---------|------|-------------|-------------|
-| `/orchestrate` | Persistent | Automated parallel agent execution with monitoring and verification loops | Large projects needing maximum parallelism |
-| `/work` | Persistent | Step-by-step multi-domain coordination with user approval at each gate | Features spanning multiple agents where you want control |
+| `/orchestrate` | Persistent | Loads or creates a plan, then delegates parallel execution with monitoring and verification | Independent tasks suited to automated parallel coordination |
+| `/work` | Persistent | Step-by-step multi-domain planning, implementation, and QA within the authorized scope | Features spanning multiple domains that need coordinated delivery |
 | `/ultrawork` | Persistent | 5-phase, 17-step quality workflow with 11 review checkpoints | Maximum quality delivery, production-critical code |
 | `/plan` | Non-persistent | PM-driven task breakdown, API contracts, and tracked plan artifacts in `docs/plans/work/` (sequential `NNN-name.md`, Status field for lifecycle) | Before any complex multi-agent work; complex features needing tracked progress and decision logs |
 | `/brainstorm` | Non-persistent | Design-first ideation with 2-3 approach proposals | Before committing to an implementation approach |
@@ -265,7 +265,7 @@ Cross-vendor tasks still use `oma agent spawn`.
 | `/scm` | Non-persistent | SCM workflow for Git (branch/merge/conflict/worktree/baseline) plus Conventional Commit generation with auto type/scope detection and feature splitting | After completing code changes or when handling repository configuration management tasks |
 | `/tools` | Non-persistent | MCP tool visibility management (enable/disable groups) | Controlling which MCP tools agents can use |
 | `/stack-set` | Non-persistent | Auto-detect project tech stack and generate backend or mobile (Swift/Flutter/RN) references | Setting up language-specific coding conventions |
-| `/ralph` | Persistent | Self-referential completion loop wrapping ultrawork with independent judge | When agents must keep working until verifiable criteria pass |
+| `/ralph` | Persistent | Repeated ultrawork execution with an independent judge and loop safeguards | Explicit requests to repeat execution until mechanical completion criteria pass |
 
 ---
 
@@ -413,7 +413,7 @@ The `-w` flag on `agent spawn` isolates an agent to a specific directory. This i
 
 5. **Iterate with re-spawns.** If an agent's output is not right, re-spawn it with the original task plus correction context. Do not start over.
 
-6. **Start with `/work` when unsure.** It provides step-by-step guidance with user confirmation at each gate.
+6. **Match coordination to the task.** Start with a single skill for one domain; use the [selection guide](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) when the task needs coordination or an explicit quality process.
 
 7. **Use `/brainstorm` before `/plan` for ambiguous ideas.** Brainstorm clarifies intent and approach before the PM agent decomposes into tasks.
 

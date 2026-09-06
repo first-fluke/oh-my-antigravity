@@ -12,7 +12,7 @@ description: Uitgebreide gebruiksgids voor oh-my-agent — snelstart, gedetaille
 3. Beschrijf wat je wilt in natuurlijke taal — oh-my-agent routeert naar de juiste agent
 4. Voor multi-agent werk, gebruik `/work` of `/orchestrate`
 
-Dat is de volledige workflow. Geen speciale syntaxis nodig voor enkel-domein taken.
+Taken binnen één domein hebben geen speciale syntaxis nodig. Gebruik de [keuzegids voor skills en workflows](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) om te kiezen tussen één skill, `/work`, `/orchestrate`, `/ultrawork` en `/ralph`.
 
 ---
 
@@ -45,13 +45,13 @@ Build a TODO app with user authentication, task CRUD, and a mobile companion app
 
 **Wat er gebeurt:**
 
-1. Trefwoorddetectie identificeert dit als multi-domein (frontend + backend + mobile)
-2. oh-my-agent stelt `/work` of `/orchestrate` voor
+1. Dit verzoek omvat frontend, backend en mobiel werk. De hostagent kan op basis van die scope een coördinatieaanpak aanbevelen.
+2. Als de hook voor trefwoorddetectie actief is, komt "Build a TODO app" overeen met een geconfigureerd `/orchestrate`-patroon en kan die workflow worden geactiveerd. De hook vergelijkt tekst en classificeert het verzoek niet als multi-domein. Kies de gewenste workflow met een expliciet commando.
 
 **Met `/work` (stap-voor-stap met gebruikerscontrole):**
 
 3. **Stap 1 — PM Agent plant:** Identificeert domeinen, definieert API-contracten, maakt geprioriteerde taakopsplitsing
-4. **Stap 2 — Je reviewt en bevestigt het plan**
+4. **Stap 2 — Planreview:** De agent presenteert het plan en gaat verder binnen bestaande toestemming. De agent vraagt alleen om een belangrijke ontbrekende beslissing of nieuwe toestemming.
 5. **Stap 3 — Agenten spawnen per prioriteit** (P0 parallel, dan P1, etc.)
 6. **Stap 4 — QA Agent reviewt:** Beveiliging, prestaties, toegankelijkheid, cross-domein uitlijning
 7. **Stap 5 — Itereren:** Bij CRITICAL-problemen, herspawn verantwoordelijke agent
@@ -131,15 +131,22 @@ oma agent spawn qa "Review notification feature across all platforms" session-no
 - **Fase 4 — REFINE:** Grote bestanden splitsen, integratie/hergebruikreview, bijeffectenreview, dode code opruimen.
 - **Fase 5 — SHIP:** Codekwaliteitsreview, UX-stroomverificatie, deploymentgereedheid.
 
+Voor de kwaliteitspoorten gelden deze regels:
+
+- **PLAN_GATE:** Plan gedocumenteerd, aannames opgesomd, scope toegestaan.
+- **IMPL_GATE:** Toepasselijke controles zonder bestandsuitvoer en tests slagen, alleen geplande bestanden gewijzigd. Buildcontroles worden alleen op expliciet verzoek uitgevoerd.
+- **SHIP_GATE:** Alle controles slagen; bestaande toestemming blijft gelden. Publicatie of deployment vereist toestemming voor die actie.
+
 ---
 
 ## Alle workflowcommando's
 
 | Commando | Type | Wat Het Doet | Wanneer Gebruiken |
 |----------|------|-------------|-------------------|
-| `/orchestrate` | Persistent | Geautomatiseerde parallelle agentuitvoering met monitoring | Grote projecten met maximale parallelisme |
-| `/work` | Persistent | Stap-voor-stap multi-domeincoördinatie met gebruikersgoedkeuring | Functies die meerdere agenten beslaan |
+| `/orchestrate` | Persistent | Laadt of maakt een plan en delegeert parallelle uitvoering met monitoring en verificatie | Onafhankelijke taken voor geautomatiseerde parallelle coördinatie |
+| `/work` | Persistent | Stapsgewijze planning, implementatie en QA over meerdere domeinen binnen de toegestane scope | Functies over meerdere domeinen waarvoor coördinatie nodig is |
 | `/ultrawork` | Persistent | 5-fasen, 17-stappen kwaliteitsworkflow met 11 reviewcheckpoints | Maximale kwaliteitslevering |
+| `/ralph` | Persistent | Herhaalde ultrawork-uitvoering met een onafhankelijke judge en beveiligingen | Expliciet verzoek om de uitvoering te herhalen totdat mechanische voltooiingscriteria slagen |
 | `/plan` | Niet-persistent | PM-gedreven taakopsplitsing, API-contracten en bijgehouden planartefacten in `docs/plans/work/` (sequentieel `NNN-name.md`, Status-veld voor lifecycle) | Voor complex multi-agent werk; complexe functies met bijgehouden voortgang en beslissingslogs |
 | `/brainstorm` | Niet-persistent | Design-first ideevorming met 2-3 benaderingsvoorstellen | Voor het vastleggen van een implementatiebenadering |
 | `/deepinit` | Niet-persistent | Volledige projectinitialisatie | oh-my-agent instellen in bestaande codebase |
@@ -198,7 +205,7 @@ oma agent spawn qa "Review notification feature across all platforms" session-no
 3. **Vergrendel API-contracten voor implementatie.** Draai eerst `/plan`.
 4. **Monitor actief.** Open een dashboardterminal.
 5. **Itereer met herspawns.** Herspawn met correctiecontext.
-6. **Begin met `/work` bij twijfel.**
+6. **Stem coördinatie af op de taak.** Begin met één skill voor één domein; gebruik de [keuzegids](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) voor coördinatie of een expliciet kwaliteitsproces.
 7. **Gebruik `/brainstorm` voor `/plan` bij dubbelzinnige ideeen.**
 8. **Draai `/deepinit` op nieuwe codebases.**
 9. **Configureer `model_preset`.** Gebruik `claude`, `antigravity` of `mixed` om agenten naar de juiste CLI te routeren. Voeg `agents:` overrides toe voor fijnmazige controle. Zie [Per-Agent Models](./per-agent-models.md).

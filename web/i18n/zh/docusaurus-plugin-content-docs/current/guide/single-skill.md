@@ -33,6 +33,8 @@ description: oh-my-agent 单领域任务的详细指南。何时使用、预检�
 - 功能跨越前端、后端和数据库
 - 第一次迭代后范围扩展到超出单一领域
 
+单技能工作也包含测试和验收标准；仅有这些要求不意味着要用 `/ralph`。需要跨领域协调或明确要求质量流程时，参见[技能和工作流选择指南](/docs/core-concepts/workflows#choosing-a-skill-or-workflow)。
+
 ---
 
 ## 预检清单

@@ -11,6 +11,28 @@ There are 21 workflows, 4 of which are persistent (they maintain state and canno
 
 ---
 
+## Choosing a skill or workflow {#choosing-a-skill-or-workflow}
+
+Choose by the coordination and verification the task needs. If you have already selected a workflow, follow it; continue an active workflow unless you explicitly cancel or change it. For a new task without a selected workflow, use this guide:
+
+| Task needs | Choose | Example |
+|---|---|---|
+| One domain with no agent coordination | [Single skill](/docs/guide/single-skill) | Add an API endpoint and test its validation |
+| Multiple domains with step-by-step planning, implementation, and QA | `/work` | Coordinate an API change with its web and mobile clients |
+| Automated delegation of independent tasks in parallel | `/orchestrate` | Implement backend and frontend tasks in parallel after resolving dependencies |
+| An explicitly requested comprehensive quality process | `/ultrawork` | Run the full planning, implementation, verification, refinement, and release-readiness reviews |
+| An explicit request to repeat execution until mechanically verifiable criteria pass | `/ralph` | Repeat implementation and independent verification until the specified regression checks pass, within the loop safeguards |
+
+`/orchestrate` loads a usable plan or creates one through `/plan` before spawning agents. You do not need to run `/plan` first. An existing plan is therefore not the distinction between `/work` and `/orchestrate`; choose based on how you want the work coordinated. Both can run independent tasks in parallel.
+
+Acceptance criteria and tests belong in single-skill tasks too. Their presence alone does not call for `/ralph`: each Ralph iteration runs the full ultrawork process and an independent judge, so choose it when you want that repeated verification loop. It can stop with incomplete or blocked work when safeguards apply.
+
+This table is selection advice, not an automatic workflow router. The host agent can recommend a suitable approach; recommending or explaining a workflow does not start it. A slash command explicitly selects one. Where the keyword-detection hook is enabled, matching configured keywords or patterns can also activate one, subject to its informational-query filters. The detector does not classify domain count, inspect plan readiness, or apply the table as a priority algorithm.
+
+Plan review reuses authorization already given for the task. Agents ask only for a material missing decision or an action outside that scope. A release-readiness review does not itself authorize publishing or deployment.
+
+---
+
 ## Persistent workflows
 
 Persistent workflows keep running until all tasks are done. They maintain state in `.agents/state/` and reinject `[OMA PERSISTENT MODE: ...]` context on each user message until explicitly deactivated.
@@ -48,8 +70,8 @@ Noun whitelist (15): app, api, service, server, cli, tool, website, dashboard, s
 
 **Steps:**
 1. **Step 0, Preparation:** Read coordination skill, context-loading guide, memory protocol. Detect vendor.
-2. **Step 1, Load/Create Plan:** Check for `.agents/results/plan-{sessionId}.json`, then the most recent `plan-*.json`. If none is found — or the plan is not execution-ready (a task missing its agent, priority tier, dependencies, or acceptance criteria) — delegate to `/plan` inline to create one, keeping the same session ID. `/plan`'s user-review gate still applies; it is what authorizes the Step 3 fan-out.
-3. **Step 2, Initialize Session:** Load `oma-config.yaml`, display CLI mapping table, generate session ID (`session-YYYYMMDD-HHMMSS`), create `orchestrator-session.md` and `task-board.md` in memory.
+2. **Step 1, Load/Create Plan:** Check for `.agents/results/plan-{sessionId}.json`, then the most recent `plan-*.json`. If none is found — or the plan is not execution-ready (a task missing its agent, priority tier, dependencies, or acceptance criteria) — delegate to `/plan` inline to create one, keeping the same session ID. Present the plan and reuse existing authorization; ask only for a material missing decision or new authorization before delegation.
+3. **Step 2, Initialize Session:** Load `oma-config.yaml`, display CLI mapping table, reuse the session ID from plan creation or generate one (`session-YYYYMMDD-HHMMSS`), create `orchestrator-session.md` and `task-board.md` in memory.
 4. **Step 3, Spawn Agents:** For each priority tier (P0 first, then P1...), spawn agents using vendor-appropriate method (Agent tool for Claude Code, `oma agent spawn` for Gemini/Antigravity, model-mediated for Codex). Never exceed MAX_PARALLEL.
 5. **Step 4, Monitor:** Poll `progress-{agent}.md` files, update `task-board.md`. Watch for completions, failures, crashes.
 6. **Step 5, Verify:** Run `verify.sh {agent-type} {workspace}` per completed agent. On failure, re-spawn with error context (max 2 retries). After 2 retries, activate Exploration Loop: generate 2-3 hypotheses, spawn parallel experiments, score, keep best.
@@ -65,7 +87,7 @@ Noun whitelist (15): app, api, service, server, cli, tool, website, dashboard, s
 
 ### /work
 
-**Description:** Step-by-step multi-domain coordination. PM plans first, then agents execute with user confirmation at each gate, followed by QA review and issue remediation.
+**Description:** Step-by-step multi-domain coordination. PM plans first, then agents execute within the authorized scope, followed by QA review and issue remediation.
 
 **Persistent:** Yes. State file: `.agents/state/work-state.json`.
 
@@ -84,14 +106,14 @@ Noun whitelist (15): app, api, service, server, cli, tool, website, dashboard, s
 1. **Step 0, Preparation:** Read skills, context-loading, memory protocol. Record session start.
 2. **Step 1, Analyze Requirements:** Identify involved domains. If single domain, suggest direct agent use.
 3. **Step 2, PM Agent Planning:** PM decomposes requirements, defines API contracts, creates prioritized task breakdown, saves to `.agents/results/plan-{sessionId}.json`.
-4. **Step 3, Review Plan:** Present plan to user. **Must get confirmation before proceeding.**
+4. **Step 3, Review Plan:** Present the plan and proceed within existing authorization. Ask only for a material missing decision or new authorization.
 5. **Step 4, Spawn Agents:** Spawn by priority tier, parallel within same tier, separate workspaces.
 6. **Step 5, Monitor:** Poll progress files, verify API contract alignment between agents.
 7. **Step 6, QA Review:** Spawn QA agent for security (OWASP), performance, accessibility, code quality.
 8. **Step 6.1, Quality Score** (conditional): Measure and record baseline.
 9. **Step 7, Iterate:** If CRITICAL/HIGH issues found, re-spawn responsible agents. If same issue persists after 2 attempts, activate Exploration Loop.
 
-**When to use:** Features spanning multiple domains where you want step-by-step control and user approval at each gate.
+**When to use:** Features spanning multiple domains where you want step-by-step coordination of planning, implementation, and QA.
 
 ---
 
@@ -117,11 +139,11 @@ Noun whitelist (15): app, api, service, server, cli, tool, website, dashboard, s
 | **SHIP** | 14-17 | QA Agent (spawned) | Code Quality (lint/coverage), UX Flow, Related Issues, Deployment Readiness |
 
 **Gate definitions:**
-- **PLAN_GATE:** Plan documented, assumptions listed, alternatives considered, over-engineering review done, user confirmation.
-- **IMPL_GATE:** Build succeeds, tests pass, only planned files modified, baseline Quality Score recorded (if measured).
+- **PLAN_GATE:** Plan documented, assumptions listed, alternatives considered, over-engineering review done, scope authorized.
+- **IMPL_GATE:** Applicable non-emitting checks and tests pass, only planned files modified, baseline Quality Score recorded (if measured). Build checks run only when explicitly requested.
 - **VERIFY_GATE:** Implementation matches requirements, zero CRITICAL, zero HIGH, no regressions, Quality Score >= 75 (if measured).
 - **REFINE_GATE:** No large files/functions (> 500 lines / > 50 lines), integration opportunities captured, side effects verified, code cleaned, Quality Score non-regressed.
-- **SHIP_GATE:** Quality checks pass, UX verified, related issues resolved, deployment checklist complete, final Quality Score >= 75 with non-negative delta, user final approval.
+- **SHIP_GATE:** Quality checks pass, UX verified, related issues resolved, deployment checklist complete, final Quality Score >= 75 with non-negative delta (if measured). Reuse existing authorization; publishing or deployment requires authorization for that action.
 
 **Gate failure behavior:**
 - First failure: return to the relevant step, fix, and retry.
@@ -137,7 +159,7 @@ Noun whitelist (15): app, api, service, server, cli, tool, website, dashboard, s
 
 ### /ralph
 
-**Description:** Persistent self-referential execution loop. Wraps ultrawork with an independent verifier that checks completion criteria after each iteration. Keeps looping until all criteria pass or safeguards trigger.
+**Description:** Persistent self-referential execution loop. Wraps ultrawork with an independent verifier that checks completion criteria after each iteration. Reports full completion when all criteria pass, partial completion when only passed and blocked criteria remain, or stops when safeguards trigger.
 
 **Persistent:** Yes. State file: `.agents/state/ralph-state.json`.
 
@@ -154,18 +176,18 @@ Noun whitelist (15): app, api, service, server, cli, tool, website, dashboard, s
 | German | "hör nicht auf", "bis zur fertigstellung", "alles fertigstellen" |
 
 **Phases:**
-1. **Phase 0, INIT:** Load prerequisites (context-loading, memory protocol, judge protocol). Define verifiable completion criteria (each must be mechanically verifiable, such as test pass, build success, or file exists). Present criteria for user confirmation. Initialize session with `max_iterations: 5`.
+1. **Phase 0, INIT:** Load prerequisites (context-loading, memory protocol, judge protocol). Define and record mechanically verifiable completion criteria, such as test assertions, non-emitting type checks, exit codes, or file existence. Include build checks only when explicitly requested. Show the criteria and continue within the authorized scope. Initialize session with `max_iterations: 5`.
 2. **Phase 1, WORK:** Execute ultrawork (PLAN → IMPL → VERIFY → REFINE → SHIP) as a single iteration.
-3. **Phase 2, JUDGE:** Independent verifier checks each completion criterion against actual project state (run tests, check builds, verify file existence). Score each criterion as PASS/FAIL with evidence.
-4. **Phase 3, DECIDE:** If all criteria PASS → end loop, generate final report. If any FAIL → increment iteration counter, feed failure context back, return to Phase 1.
+3. **Phase 2, JUDGE:** Independent verifier checks each completion criterion against actual project state (run authorized checks and verify file existence). Record evidence and criterion status, including PASS, FAIL, REGRESSED, or BLOCKED.
+4. **Phase 3, DECIDE:** If all criteria PASS → report full completion. If only PASS and BLOCKED remain → report partial completion. If any FAIL or REGRESSED → feed failure context back into the next iteration, subject to safeguards.
 5. **Safeguards:** Loop stops if `current_iteration >= max_iterations` (default 5), or if the same criterion fails 3 consecutive times with the same root cause (stuck detection).
 
-**Key difference from /ultrawork:** Ultrawork is a single-pass 5-phase workflow. Ralph wraps ultrawork in a retry loop with an independent judge that objectively verifies completion. It keeps going until the work is actually done, not just "reviewed."
+**Key difference from /ultrawork:** Ultrawork runs a 5-phase process with retries when a phase gate fails. Ralph wraps ultrawork in a retry loop with an independent judge that objectively verifies completion. The loop ends with a full completion report, a partial completion report for blocked work, or a safeguard report.
 
 **Files read:** `.agents/workflows/ralph/resources/judge-protocol.md`, all ultrawork files.
 **Files written:** `session-ralph.md` (memory), iteration logs, final report.
 
-**When to use:** When you need guaranteed completion. The agent must keep working until verifiable criteria pass, not just do one pass and report.
+**When to use:** When you explicitly want repeated execution and independent verification against mechanical completion criteria. Tests alone do not require Ralph; account for the full ultrawork process in each iteration and its safeguards.
 
 ---
 
@@ -621,14 +643,19 @@ The workflow can also end naturally when all steps are completed and the final g
 
 ## Typical workflow sequences
 
-### Quick feature
+### Single-domain feature
 ```
-/plan → review output → /work
+Describe the task → relevant skill → implement → focused verification
 ```
 
 ### Complex multi-domain project
 ```
-/work → PM plans → user confirms → agents spawn → QA reviews → fix issues → ship
+/work → PM plans → review within authorized scope → agents spawn → QA reviews → fix issues → report
+```
+
+### Automated parallel implementation
+```
+/orchestrate → load or create plan → resolve dependencies → spawn independent tasks → verify → report
 ```
 
 ### Maximum quality delivery
@@ -651,7 +678,7 @@ The workflow can also end naturally when all steps are completed and the final g
 /deepinit → AGENTS.md + ARCHITECTURE.md + docs/
 ```
 
-### Guaranteed completion
+### Repeated execution with independent verification
 ```
-/ralph → define criteria → ultrawork loop → judge verifies → re-iterate if needed → all criteria pass → done
+/ralph → define criteria → ultrawork → judge → repeat as needed → completion, partial completion, or safeguard report
 ```

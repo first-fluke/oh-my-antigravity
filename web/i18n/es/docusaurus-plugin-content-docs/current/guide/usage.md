@@ -5,7 +5,7 @@ description: Ejemplos del mundo real mostrando como usar oh-my-agent — desde t
 
 # Como Usar oh-my-agent
 
-> No sabes por donde empezar? Escribe `/work` seguido de lo que quieres construir.
+> Para tareas de un solo dominio, describe lo que necesitas. Para elegir la coordinación y la verificación adecuadas, consulta la [guía de selección](/docs/core-concepts/workflows#choosing-a-skill-or-workflow).
 
 ## Inicio rapido
 
@@ -13,7 +13,7 @@ description: Ejemplos del mundo real mostrando como usar oh-my-agent — desde t
 2. Los skills se detectan automaticamente desde `.agents/skills/`
 3. Empieza a chatear — describe lo que quieres
 
-Eso es todo. oh-my-agent se encarga del resto.
+Las tareas de un solo dominio no necesitan sintaxis especial. Usa la [guía de selección de habilidades y flujos de trabajo](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) para elegir entre una habilidad individual, `/work`, `/orchestrate`, `/ultrawork` y `/ralph`.
 
 ---
 
@@ -40,17 +40,19 @@ Sin comandos slash necesarios. Solo describe lo que quieres.
 
 **Lo que pasa:**
 
-1. La deteccion de keywords ve que es multi-dominio → sugiere `/work`
-2. **Agente PM** planifica el trabajo: API de auth, esquema de base de datos, UI frontend, alcance de QA
-3. **Lanzas agentes:**
+1. Esta solicitud abarca trabajo de frontend y backend. El agente anfitrión puede usar ese alcance para recomendar cómo coordinarlo.
+2. Con el hook de detección de palabras clave habilitado, una frase como "Build a TODO app" coincide con un patrón configurado de `/orchestrate` y puede activarlo. El hook busca coincidencias de texto; no clasifica la solicitud como multidominio. Usa un comando explícito para seleccionar el flujo que quieras.
+3. **Agente PM** planifica el trabajo: API de auth, esquema de base de datos, UI frontend, alcance de QA
+4. **Revisión del plan:** El agente presenta el plan y continúa con la autorización existente. Solo pregunta si falta una decisión relevante o una nueva autorización.
+5. **Lanzas agentes:**
    ```bash
    oma agent spawn backend "JWT authentication API" session-01 -w ./apps/api &
    oma agent spawn frontend "Login and TODO UI" session-01 -w ./apps/web &
    wait
    ```
-4. **Agentes trabajan en paralelo** — cada uno en su propio workspace
-5. **Agente QA revisa** — auditoria de seguridad, verificacion de integracion
-6. **Iteras** — re-lanza agentes con refinamientos si es necesario
+6. **Agentes trabajan en paralelo** — cada uno en su propio workspace
+7. **Agente QA revisa** — auditoria de seguridad, verificacion de integracion
+8. **Iteras** — re-lanza agentes con refinamientos si es necesario
 
 ## Ejemplo 3: correccion de bugs
 
@@ -110,9 +112,10 @@ Escribe estos en tu IDE de IA para activar procesos estructurados:
 |---------|----------|---------------|
 | `/brainstorm` | Ideacion libre y exploracion | Antes de comprometerte con un enfoque |
 | `/plan` | Descomposicion PM, contratos de API y artefactos de plan rastreados en `docs/plans/work/` (`NNN-name.md` secuencial, campo Status para ciclo de vida) | Antes de iniciar cualquier funcionalidad compleja; funcionalidades complejas que necesitan progreso rastreado y registros de decisiones |
-| `/work` | Coordinacion multi-dominio paso a paso | Funcionalidades que abarcan multiples agentes |
-| `/orchestrate` | Ejecucion automatizada de agentes en paralelo | Proyectos grandes, maximo paralelismo |
+| `/work` | Planificación, implementación y QA paso a paso en varios dominios dentro del alcance autorizado | Funcionalidades que abarcan varios dominios y requieren una entrega coordinada |
+| `/orchestrate` | Carga o crea un plan y delega la ejecución paralela con monitoreo y verificación | Tareas independientes adecuadas para una coordinación paralela automatizada |
 | `/ultrawork` | Workflow de calidad de 5 fases (11 puertas de revision) | Entrega de maxima calidad |
+| `/ralph` | Ejecución repetida de ultrawork con un juez independiente y salvaguardas del bucle | Solicitudes explícitas de repetir la ejecución hasta que pasen criterios mecánicos de finalización |
 | `/review` | Auditoria de seguridad + rendimiento + accesibilidad | Antes de hacer merge |
 | `/debug` | Depuracion estructurada de causa raiz | Investigando bugs |
 | `/design` | Workflow de diseno de 7 fases → `DESIGN.md` | Construyendo sistemas de diseno |
@@ -120,6 +123,12 @@ Escribe estos en tu IDE de IA para activar procesos estructurados:
 | `/tools` | Gestion de servidores MCP | Agregando herramientas externas |
 | `/stack-set` | Configuracion de stack tecnologico | Estableciendo preferencias de lenguaje/framework |
 | `/deepinit` | Inicializacion completa del proyecto | Configurando en un codebase existente |
+
+Las puertas de calidad de `/ultrawork` respetan el alcance autorizado:
+
+- PLAN_GATE: Plan documentado, suposiciones listadas, alcance autorizado.
+- IMPL_GATE: Pasan las comprobaciones aplicables que no generan archivos y las pruebas; solo se modifican los archivos planificados. Las comprobaciones de build se ejecutan solo cuando se solicitan explícitamente.
+- SHIP_GATE: Pasan todas las comprobaciones y se reutiliza la autorización existente. Publicar o desplegar requiere autorización para esa acción.
 
 ---
 
@@ -200,7 +209,7 @@ Usa 3 terminales:
 3. **Bloquea contratos primero** — ejecuta `/plan` antes de lanzar agentes en paralelo
 4. **Monitorea activamente** — los dashboards detectan problemas antes del merge
 5. **Itera con re-spawns** — refina prompts de agentes en lugar de empezar de cero
-6. **Empieza con `/work`** — cuando no sepas que workflow usar
+6. **Adapta la coordinación a la tarea.** Empieza con una habilidad individual para un solo dominio; usa la [guía de selección](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) cuando la tarea necesite coordinación o un proceso de calidad explícito.
 
 ---
 

@@ -11,6 +11,28 @@ Jest 16 workflow, z których 4 są trwałe (utrzymują stan i nie mogą być prz
 
 ---
 
+## Wybór skilla lub workflow {#choosing-a-skill-or-workflow}
+
+Wybierz sposób pracy według potrzeb zadania w zakresie koordynacji i weryfikacji. Jeśli workflow został już wybrany, postępuj zgodnie z nim. Kontynuuj aktywny workflow, dopóki go jawnie nie anulujesz lub nie zmienisz. Dla nowego zadania bez wybranego workflow skorzystaj z poniższych wskazówek:
+
+| Potrzeby zadania | Wybór | Przykład |
+|---|---|---|
+| Jedna domena bez koordynacji agentów | [Pojedynczy skill](/docs/guide/single-skill) | Dodanie endpointu API i przetestowanie walidacji |
+| Wiele domen z planowaniem, implementacją i QA krok po kroku | `/work` | Koordynacja zmiany API ze zmianami w klientach webowych i mobilnych |
+| Automatyczne delegowanie niezależnych zadań do wykonania równolegle | `/orchestrate` | Równoległa implementacja zadań backendu i frontendu po rozstrzygnięciu zależności |
+| Wyraźnie zlecony kompleksowy proces jakości | `/ultrawork` | Pełny proces planowania, implementacji, weryfikacji, udoskonalania i przeglądu gotowości do wydania |
+| Wyraźne polecenie powtarzania wykonania do spełnienia kryteriów sprawdzalnych automatycznie | `/ralph` | Powtarzanie implementacji i niezależnej weryfikacji, aż wskazane kontrole regresji przejdą, z uwzględnieniem zabezpieczeń pętli |
+
+`/orchestrate` ładuje plan gotowy do użycia lub tworzy go przez `/plan` przed uruchomieniem agentów. Nie musisz wcześniej uruchamiać `/plan`. Istnienie planu nie jest więc kryterium rozróżniającym `/work` i `/orchestrate`; wybierz według oczekiwanego sposobu koordynacji pracy. Oba workflow mogą wykonywać niezależne zadania równolegle.
+
+Kryteria akceptacji i testy należą również do zadań wykonywanych przez pojedynczy skill. Sama ich obecność nie oznacza potrzeby użycia `/ralph`. Każda iteracja Ralph obejmuje cały proces ultrawork i niezależną ocenę judge, dlatego wybierz go, gdy potrzebujesz takiej powtarzanej weryfikacji. Zabezpieczenia mogą zatrzymać pętlę, gdy część pracy pozostaje nieukończona lub zablokowana.
+
+Ta tabela pomaga dokonać wyboru; nie jest automatycznym routerem workflow. Główny agent może zalecić odpowiednie podejście, ale zalecenie lub objaśnienie workflow nie uruchamia go. Komenda slash jawnie wybiera workflow. Jeśli hook wykrywania słów kluczowych jest włączony, dopasowanie skonfigurowanych słów lub wzorców również może go aktywować, z uwzględnieniem filtrów zapytań informacyjnych. Detektor nie klasyfikuje liczby domen, nie sprawdza gotowości planu ani nie stosuje tabeli jako algorytmu priorytetów.
+
+Przegląd planu korzysta ze zgody już udzielonej na wykonanie zadania. Agenci pytają tylko wtedy, gdy brakuje istotnej decyzji lub potrzebne jest działanie poza tym zakresem. Sam przegląd gotowości do wydania nie upoważnia do publikacji ani wdrożenia.
+
+---
+
 ## Trwałe workflow
 
 Trwałe workflow działają do momentu zakończenia wszystkich zadań. Utrzymują stan w `.agents/state/` i reiniekują kontekst `[OMA PERSISTENT MODE: ...]` przy każdej wiadomości użytkownika aż do jawnej dezaktywacji.
@@ -48,8 +70,8 @@ Lista dozwolonych rzeczowników (15): app, api, service, server, cli, tool, webs
 
 **Kroki:**
 1. **Krok 0 — Przygotowanie:** Odczytaj skill koordynacji, przewodnik ładowania kontekstu, protokół pamięci. Wykryj dostawcę.
-2. **Krok 1 — Załaduj/Utwórz plan:** Sprawdź `.agents/results/plan-{sessionId}.json`. Jeśli brak, poproś użytkownika o uruchomienie `/plan` najpierw.
-3. **Krok 2 — Inicjalizacja sesji:** Załaduj `oma-config.yaml`, wyświetl tabelę mapowania CLI, wygeneruj ID sesji (`session-YYYYMMDD-HHMMSS`), utwórz `orchestrator-session.md` i `task-board.md` w pamięci.
+2. **Krok 1 — Załaduj/Utwórz plan:** Sprawdź `.agents/results/plan-{sessionId}.json`, a następnie najnowszy `plan-*.json`. Jeśli planu nie ma lub nie jest gotowy do wykonania (zadanie nie ma przypisanego agenta, poziomu priorytetu, zależności lub kryteriów akceptacji), zleć utworzenie planu przez `/plan` inline, zachowując to samo ID sesji. Przedstaw plan i korzystaj z dotychczasowej zgody; przed delegowaniem pytaj tylko o brakującą istotną decyzję lub nową zgodę.
+3. **Krok 2 — Inicjalizacja sesji:** Załaduj `oma-config.yaml`, wyświetl tabelę mapowania CLI, wykorzystaj ID sesji z etapu tworzenia planu lub wygeneruj nowe (`session-YYYYMMDD-HHMMSS`), utwórz `orchestrator-session.md` i `task-board.md` w pamięci.
 4. **Krok 3 — Uruchom agentów:** Dla każdego poziomu priorytetów (najpierw P0, potem P1...), uruchom agentów używając metody właściwej dla dostawcy (narzędzie Agent dla Claude Code, `oma agent spawn` dla Gemini/Antigravity, mediowane przez model dla Codex). Nigdy nie przekraczaj MAX_PARALLEL.
 5. **Krok 4 — Monitoruj:** Odpytuj pliki `progress-{agent}.md`, aktualizuj `task-board.md`. Obserwuj zakończenia, niepowodzenia, awarie.
 6. **Krok 5 — Weryfikuj:** Uruchom `verify.sh {agent-type} {workspace}` per zakończony agent. Przy niepowodzeniu, ponownie uruchom z kontekstem błędu (maks. 2 ponowienia). Po 2 ponowieniach, aktywuj Pętlę eksploracji: wygeneruj 2-3 hipotezy, uruchom równoległe eksperymenty, oceń, zachowaj najlepszy.
@@ -65,7 +87,7 @@ Lista dozwolonych rzeczowników (15): app, api, service, server, cli, tool, webs
 
 ### /work
 
-**Opis:** Krokowa koordynacja wielodomenowa. PM planuje najpierw, następnie agenci wykonują z potwierdzeniem użytkownika przy każdej bramce, po czym następuje przegląd QA i pętla naprawy problemów.
+**Opis:** Koordynacja wielodomenowa krok po kroku. Najpierw PM tworzy plan, następnie agenci wykonują pracę w zatwierdzonym zakresie, po czym następują przegląd QA i naprawa problemów.
 
 **Trwały:** Tak. Plik stanu: `.agents/state/work-state.json`.
 
@@ -84,14 +106,14 @@ Lista dozwolonych rzeczowników (15): app, api, service, server, cli, tool, webs
 1. **Krok 0 — Przygotowanie:** Odczytaj skill, ładowanie kontekstu, protokół pamięci. Zarejestruj start sesji.
 2. **Krok 1 — Analiza wymagań:** Zidentyfikuj zaangażowane domeny. Jeśli jedna domena, zasugeruj bezpośrednie użycie agenta.
 3. **Krok 2 — Planowanie PM:** PM rozkłada wymagania, definiuje kontrakty API, tworzy priorytetyzowany rozkład zadań, zapisuje do `.agents/results/plan-{sessionId}.json`.
-4. **Krok 3 — Przegląd planu:** Przedstaw plan użytkownikowi. **Wymagane potwierdzenie przed kontynuacją.**
+4. **Krok 3 — Przegląd planu:** Przedstaw plan i kontynuuj w ramach dotychczasowej zgody. Pytaj tylko o brakującą istotną decyzję lub nową zgodę.
 5. **Krok 4 — Uruchom agentów:** Uruchom według poziomu priorytetów, równolegle w ramach tego samego poziomu, oddzielne przestrzenie robocze.
 6. **Krok 5 — Monitoruj:** Odpytuj pliki postępu, weryfikuj zgodność kontraktów API między agentami.
 7. **Krok 6 — Przegląd QA:** Uruchom agenta QA do bezpieczeństwa (OWASP), wydajności, dostępności, jakości kodu.
 8. **Krok 6.1 — Quality Score** (warunkowy): Zmierz i zarejestruj linię bazową.
 9. **Krok 7 — Iteruj:** Jeśli znaleziono problemy CRITICAL/HIGH, ponownie uruchom odpowiedzialnych agentów. Jeśli ten sam problem utrzymuje się po 2 próbach, aktywuj Pętlę eksploracji.
 
-**Kiedy używać:** Funkcjonalności obejmujące wiele domen, gdzie chcesz krokowej kontroli i zatwierdzenia użytkownika przy każdej bramce.
+**Kiedy używać:** Funkcjonalności obejmujące wiele domen, w których potrzebujesz koordynacji planowania, implementacji i QA krok po kroku.
 
 ---
 
@@ -117,11 +139,11 @@ Lista dozwolonych rzeczowników (15): app, api, service, server, cli, tool, webs
 | **SHIP** | 14-17 | Agent QA (uruchamiany) | Jakość kodu (lint/pokrycie), Przepływ UX, Powiązane problemy, Gotowość do wdrożenia |
 
 **Definicje bramek:**
-- **PLAN_GATE:** Plan udokumentowany, założenia wymienione, alternatywy rozważone, przegląd nadmiernej inżynierii wykonany, potwierdzenie użytkownika.
-- **IMPL_GATE:** Build przechodzi, testy przechodzą, zmodyfikowano tylko zaplanowane pliki, bazowy Quality Score zarejestrowany (jeśli mierzony).
+- **PLAN_GATE:** Plan udokumentowany, założenia wymienione, alternatywy rozważone, przegląd nadmiernej inżynierii wykonany, zakres zatwierdzony.
+- **IMPL_GATE:** Odpowiednie kontrole bez generowania plików wyjściowych oraz testy przechodzą, zmodyfikowano tylko zaplanowane pliki, bazowy Quality Score zarejestrowany (jeśli mierzony). Kontrole builda uruchamia się tylko na wyraźne żądanie.
 - **VERIFY_GATE:** Implementacja pasuje do wymagań, zero CRITICAL, zero HIGH, brak regresji, Quality Score >= 75 (jeśli mierzony).
 - **REFINE_GATE:** Brak dużych plików/funkcji (> 500 linii / > 50 linii), możliwości integracji wychwycone, efekty uboczne zweryfikowane, kod wyczyszczony, Quality Score nie spadł.
-- **SHIP_GATE:** Sprawdzenia jakości przechodzą, UX zweryfikowany, powiązane problemy rozwiązane, lista kontrolna wdrożenia kompletna, końcowy Quality Score >= 75 z nieujemną deltą, końcowe zatwierdzenie użytkownika.
+- **SHIP_GATE:** Sprawdzenia jakości przechodzą, UX zweryfikowany, powiązane problemy rozwiązane, lista kontrolna wdrożenia kompletna, końcowy Quality Score >= 75 z nieujemną deltą (jeśli mierzony). Korzystaj z dotychczasowej zgody; publikacja lub wdrożenie wymaga zgody na daną czynność.
 
 **Zachowanie przy niepowodzeniu bramki:**
 - Pierwsze niepowodzenie: powrót do odpowiedniego kroku, naprawa i ponowna próba.
@@ -137,7 +159,7 @@ Lista dozwolonych rzeczowników (15): app, api, service, server, cli, tool, webs
 
 ### /ralph
 
-**Opis:** Trwała, samoodwołująca się pętla wykonania. Opakowuje ultrawork niezależnym weryfikatorem, który po każdej iteracji sprawdza kryteria ukończenia. Iteruje do momentu, aż wszystkie kryteria przejdą lub zadziałają zabezpieczenia.
+**Opis:** Trwała, samoodwołująca się pętla wykonania. Opakowuje ultrawork niezależnym weryfikatorem, który po każdej iteracji sprawdza kryteria ukończenia. Raportuje pełne ukończenie, gdy wszystkie kryteria są spełnione, częściowe ukończenie, gdy pozostają tylko kryteria spełnione i zablokowane, lub zatrzymuje się po zadziałaniu zabezpieczeń.
 
 **Trwały:** Tak. Plik stanu: `.agents/state/ralph-state.json`.
 
@@ -154,18 +176,18 @@ Lista dozwolonych rzeczowników (15): app, api, service, server, cli, tool, webs
 | Niemiecki | "hör nicht auf", "bis zur fertigstellung", "alles fertigstellen" |
 
 **Fazy:**
-1. **Faza 0 — INIT:** Załaduj wymagania wstępne (context-loading, protokół pamięci, protokół judge). Zdefiniuj weryfikowalne kryteria ukończenia (każde musi być mechanicznie weryfikowalne — testy przechodzą, build się udaje, plik istnieje). Przedstaw kryteria do potwierdzenia przez użytkownika. Zainicjuj sesję z `max_iterations: 5`.
+1. **Faza 0 — INIT:** Załaduj wymagania wstępne (context-loading, protokół pamięci, protokół judge). Zdefiniuj i zapisz kryteria ukończenia sprawdzalne automatycznie, takie jak asercje testów, sprawdzanie typów bez generowania plików wyjściowych, kody zakończenia lub istnienie plików. Uwzględniaj kontrole builda tylko na wyraźne żądanie. Przedstaw kryteria i kontynuuj w zatwierdzonym zakresie. Zainicjuj sesję z `max_iterations: 5`.
 2. **Faza 1 — WORK:** Wykonaj ultrawork (PLAN → IMPL → VERIFY → REFINE → SHIP) jako jedną iterację.
-3. **Faza 2 — JUDGE:** Niezależny weryfikator sprawdza każde kryterium ukończenia wobec rzeczywistego stanu projektu (uruchamia testy, sprawdza buildy, weryfikuje istnienie plików). Każde kryterium oceniane jako PASS/FAIL z dowodami.
-4. **Faza 3 — DECIDE:** Jeśli wszystkie kryteria PASS → zakończ pętlę, wygeneruj raport końcowy. Jeśli którekolwiek FAIL → zwiększ licznik iteracji, przekaż kontekst porażki, wróć do Fazy 1.
+3. **Faza 2 — JUDGE:** Niezależny weryfikator sprawdza każde kryterium ukończenia wobec rzeczywistego stanu projektu (uruchamia dozwolone kontrole i weryfikuje istnienie plików). Zapisuje dowody i status kryterium, w tym PASS, FAIL, REGRESSED lub BLOCKED.
+4. **Faza 3 — DECIDE:** Jeśli wszystkie kryteria mają status PASS, zgłoś pełne ukończenie. Jeśli pozostają tylko PASS i BLOCKED, zgłoś częściowe ukończenie. Jeśli występuje FAIL lub REGRESSED, przekaż kontekst niepowodzenia do następnej iteracji, z uwzględnieniem zabezpieczeń.
 5. **Zabezpieczenia:** Pętla zatrzymuje się, gdy `current_iteration >= max_iterations` (domyślnie 5) lub gdy to samo kryterium zawiedzie 3 razy z rzędu z tej samej przyczyny (wykrycie utknięcia).
 
-**Kluczowa różnica w stosunku do /ultrawork:** Ultrawork to jednokrotny workflow 5-fazowy. Ralph opakowuje ultrawork w pętlę ponawiania z niezależnym judge, który obiektywnie weryfikuje ukończenie — działa dalej, aż praca będzie faktycznie zakończona, a nie tylko „zrecenzowana”.
+**Kluczowa różnica w stosunku do /ultrawork:** Ultrawork realizuje proces 5-fazowy z ponowieniami, gdy bramka fazy nie przejdzie. Ralph opakowuje ultrawork w pętlę ponawiania z niezależnym judge, który obiektywnie weryfikuje ukończenie. Pętla kończy się raportem pełnego ukończenia, częściowego ukończenia z powodu zablokowanej pracy lub zatrzymania przez zabezpieczenia.
 
 **Czytane pliki:** `.agents/workflows/ralph/resources/judge-protocol.md`, wszystkie pliki ultrawork.
 **Zapisywane pliki:** `session-ralph.md` (pamięć), logi iteracji, raport końcowy.
 
-**Kiedy używać:** Gdy potrzebne jest gwarantowane ukończenie — agent musi pracować, aż weryfikowalne kryteria przejdą, a nie tylko wykonać jedno przejście i zaraportować.
+**Kiedy używać:** Gdy wyraźnie chcesz powtarzanego wykonania i niezależnej weryfikacji według kryteriów ukończenia sprawdzalnych automatycznie. Same testy nie wymagają użycia tego workflow; uwzględnij pełny proces ultrawork w każdej iteracji oraz jego zabezpieczenia.
 
 ---
 
@@ -538,14 +560,19 @@ Workflow może też zakończyć się naturalnie gdy wszystkie kroki zostaną uko
 
 ## Typowe sekwencje workflow
 
-### Szybka funkcjonalność
+### Funkcjonalność w jednej domenie
 ```
-/plan → przegląd wyjścia → /exec-plan
+Describe the task → relevant skill → implement → focused verification
 ```
 
 ### Złożony projekt wielodomenowy
 ```
-/work → PM planuje → użytkownik potwierdza → agenci uruchomieni → QA przegląda → naprawa problemów → wysyłka
+/work → PM plans → review within authorized scope → agents spawn → QA reviews → fix issues → report
+```
+
+### Automatyczna implementacja równoległa
+```
+/orchestrate → load or create plan → resolve dependencies → spawn independent tasks → verify → report
 ```
 
 ### Maksymalna jakość dostarczenia
@@ -566,4 +593,9 @@ Workflow może też zakończyć się naturalnie gdy wszystkie kroki zostaną uko
 ### Konfiguracja nowej bazy kodu
 ```
 /deepinit → AGENTS.md + ARCHITECTURE.md + docs/
+```
+
+### Powtarzane wykonanie z niezależną weryfikacją
+```
+/ralph → define criteria → ultrawork → judge → repeat as needed → completion, partial completion, or safeguard report
 ```

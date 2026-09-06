@@ -12,7 +12,7 @@ description: Hướng dẫn sử dụng toàn diện oh-my-agent — bắt đầ
 3. Mô tả bạn muốn gì bằng ngôn ngữ tự nhiên — oh-my-agent định tuyến đến agent phù hợp
 4. Cho công việc đa agent, dùng `/work` hoặc `/orchestrate`
 
-Đó là toàn bộ quy trình. Không cần cú pháp đặc biệt cho task đơn lĩnh vực.
+Không cần cú pháp đặc biệt cho task đơn lĩnh vực. Dùng [hướng dẫn chọn skill và workflow](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) để chọn giữa skill đơn, `/work`, `/orchestrate`, `/ultrawork` và `/ralph`.
 
 ---
 
@@ -39,10 +39,15 @@ Create a login form component with email and password fields, client-side valida
 Build a TODO app with user authentication, task CRUD, and a mobile companion app
 ```
 
+**Diễn biến:**
+
+1. Yêu cầu này trải cả frontend, backend và mobile. Agent chính có thể dựa vào phạm vi đó để đề xuất cách điều phối.
+2. Khi hook phát hiện từ khóa được bật, "Build a TODO app" khớp mẫu `/orchestrate` đã cấu hình và có thể kích hoạt workflow đó. Hook khớp văn bản, không phân loại yêu cầu thành đa lĩnh vực. Dùng lệnh tường minh để chọn workflow bạn muốn.
+
 **Sử dụng `/work`:**
 
 1. Agent PM lập kế hoạch và phân tách task
-2. Bạn xem xét và xác nhận kế hoạch
+2. **Đánh giá kế hoạch:** Agent trình bày kế hoạch và tiếp tục trong phạm vi quyền hiện có, chỉ hỏi khi thiếu quyết định quan trọng hoặc cần quyền mới.
 3. Agent spawn theo tier ưu tiên (P0 trước, rồi P1)
 4. Agent QA đánh giá toàn bộ
 5. Lặp lại nếu QA tìm thấy vấn đề CRITICAL
@@ -110,8 +115,8 @@ oma stats get
 
 | Lệnh | Loại | Chức năng | Khi nào dùng |
 |---------|------|-------------|-------------|
-| `/orchestrate` | Liên tục | Thực thi agent song song tự động với giám sát và vòng lặp xác minh | Dự án lớn cần song song tối đa |
-| `/work` | Liên tục | Điều phối đa lĩnh vực từng bước với duyệt người dùng ở mỗi cổng | Tính năng trải nhiều agent muốn kiểm soát |
+| `/orchestrate` | Liên tục | Tải hoặc tạo kế hoạch, sau đó giao thực thi song song với giám sát và xác minh | Task độc lập phù hợp với điều phối song song tự động |
+| `/work` | Liên tục | Lập kế hoạch, triển khai và QA đa lĩnh vực từng bước trong phạm vi được cho phép | Tính năng trải nhiều lĩnh vực cần phối hợp để hoàn thành |
 | `/ultrawork` | Liên tục | Workflow chất lượng 5 giai đoạn, 17 bước, 11 checkpoint đánh giá | Phân phối chất lượng tối đa, mã production-critical |
 | `/plan` | Không liên tục | Phân tách task do PM dẫn dắt, API contract, và artifact kế hoạch được theo dõi trong `docs/plans/work/` (`NNN-name.md` tuần tự, trường Status cho lifecycle) | Trước công việc đa agent phức tạp; tính năng phức tạp cần theo dõi tiến trình và nhật ký quyết định |
 | `/brainstorm` | Không liên tục | Khám phá ý tưởng ưu tiên thiết kế với 2-3 đề xuất hướng tiếp cận | Trước khi cam kết hướng triển khai |
@@ -122,7 +127,7 @@ oma stats get
 | `/scm` | Không liên tục | Conventional commit với tự động phát hiện type/scope và tách tính năng | Sau hoàn thành thay đổi mã |
 | `/tools` | Không liên tục | Quản lý khả năng hiển thị công cụ MCP (bật/tắt nhóm) | Kiểm soát công cụ MCP agent có thể dùng |
 | `/stack-set` | Không liên tục | Tự phát hiện tech stack dự án và tạo tham chiếu backend | Thiết lập quy ước mã theo ngôn ngữ |
-| `/ralph` | Liên tục | Vòng lặp hoàn thành tự tham chiếu bọc ultrawork với judge độc lập | Khi agent phải tiếp tục làm việc cho đến khi tiêu chí xác minh pass |
+| `/ralph` | Liên tục | Lặp lại ultrawork với judge độc lập và cơ chế bảo vệ vòng lặp | Yêu cầu rõ ràng về việc lặp lại thực thi đến khi đạt tiêu chí hoàn thành kiểm chứng được bằng máy |
 
 ---
 
@@ -187,7 +192,7 @@ Cập nhật thời gian thực qua WebSocket, tự kết nối lại, chỉ bá
 
 5. **Lặp lại bằng re-spawn.** Re-spawn agent với ngữ cảnh sửa thay vì bắt đầu lại.
 
-6. **Bắt đầu với `/work` khi không chắc chắn.** Hướng dẫn từng bước với xác nhận ở mỗi cổng.
+6. **Chọn cách điều phối theo task.** Bắt đầu với skill đơn cho một lĩnh vực; dùng [hướng dẫn lựa chọn](/docs/core-concepts/workflows#choosing-a-skill-or-workflow) khi task cần phối hợp hoặc một quy trình chất lượng được yêu cầu rõ ràng.
 
 7. **Dùng `/brainstorm` trước `/plan` cho ý tưởng mơ hồ.**
 
