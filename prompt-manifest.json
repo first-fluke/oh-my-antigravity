@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "14.0.3",
-  "releaseDate": "2026-09-06T00:00:30.283Z",
+  "releaseDate": "2026-09-06T00:17:07.148Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -111,8 +111,8 @@
     },
     {
       "path": ".agents/hooks/core/agentmemory-client.ts",
-      "sha256": "57107f487b6c1633dc9116c38f8790bdc7467014d5e83bb74170347f8a8dc118",
-      "size": 9781
+      "sha256": "c5e31398926b4d232580403c05f51a3eb8695488fccb9dd5a972c3b4027139aa",
+      "size": 10081
     },
     {
       "path": ".agents/hooks/core/agy-input.ts",
@@ -153,6 +153,11 @@
       "path": ".agents/hooks/core/keyword-detector.ts",
       "sha256": "2752d63e93986c8618f0272767613d1c9c9b763b21f425c1cb7a7cc8f5667a9f",
       "size": 42976
+    },
+    {
+      "path": ".agents/hooks/core/memory-adapter.ts",
+      "sha256": "756a6d2faff5e40646963bb6b87248aec2297c5f93efafa8117f57a3d26d1beb",
+      "size": 1689
     },
     {
       "path": ".agents/hooks/core/persistent-mode.ts",
@@ -2116,6 +2121,6 @@
   "metadata": {
     "skillCount": 33,
     "workflowCount": 24,
-    "totalFiles": 421
+    "totalFiles": 422
   }
 }
