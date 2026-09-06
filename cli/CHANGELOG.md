@@ -1,5 +1,12 @@
 # Changelog
 
+## [14.1.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.0.3...cli-v14.1.0) (2026-09-06)
+
+
+### Features
+
+* **providers:** add optional Gortex and Honcho integrations ([5cfc713](https://github.com/first-fluke/oh-my-agent/commit/5cfc7138bae40550bfa08aa5383beba9a9d41038)), closes [#740](https://github.com/first-fluke/oh-my-agent/issues/740)
+
 ## [14.0.3](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.0.2...cli-v14.0.3) (2026-09-05)
 
 
