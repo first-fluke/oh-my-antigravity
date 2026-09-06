@@ -2,6 +2,10 @@
 
 When running as a CLI subagent, follow this protocol for shared state coordination.
 
+## User questions
+
+Follow the [Clarification Protocol](../../core/clarification-protocol.md). Prefer `request_user_input_async` when exposed and permitted by the current session. If unavailable, use a permitted question tool or a concise plain-text question. Respect mode restrictions: do not call a Plan-only tool in another mode or use a tool for approval when its contract forbids it. Subagents report missing information to their coordinator under the shared result contract; the coordinator asks the user when needed.
+
 ## State Management
 
 Use native file tools for coordination notes under `.agents/state/memories/` at the project root. Human-facing reports may live under `.agents/results/`. Completion follows [the shared result contract](../result-contract.md); neither location alone proves completion.

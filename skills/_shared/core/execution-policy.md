@@ -7,6 +7,7 @@ This is the shared OMA policy for authorization, clarification, verification, an
 - Carry the user's requested work through implementation and relevant verification. Existing authorization persists; a plan review or proposed fix does not require another approval when that work is already authorized.
 - Resolve routine, reversible implementation choices from repository conventions. State material assumptions and continue independent work while a question is pending.
 - Ask only for information that changes the outcome or for an action outside the authorized scope. Pause only the dependent action. Before requesting new approval, prepare the concrete result for review.
+- Use the [Clarification Protocol](clarification-protocol.md) for question transport: prefer an available asynchronous question tool and keep independent work moving. Never treat silence, elapsed time, or a default selection as approval.
 - Do not infer permission to send messages, publish, spend beyond an agreed budget, destroy data, or expand scope. Conversely, do not request that permission again when explicitly granted.
 - Never build, compile, bundle, or package software until the user explicitly asks for a build. Type checking without emission and relevant tests do not authorize a build.
 

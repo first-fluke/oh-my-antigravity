@@ -38,6 +38,7 @@ Use MCP code analysis tools to understand the current codebase:
 ## Step 2: Ask Clarifying Questions
 
 Ask the user clarifying questions **one at a time**. Prefer multiple-choice options when possible.
+For all clarification and approval questions in this workflow, follow `.agents/skills/_shared/core/clarification-protocol.md`: prefer an available asynchronous question tool, continue independent work, and wait for explicit answers before dependent approval steps.
 Key areas to clarify:
 - **Intent**: What problem are they solving? Who is the target user?
 - **Scope**: Must-have vs nice-to-have features

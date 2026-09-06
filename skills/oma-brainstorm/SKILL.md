@@ -129,7 +129,7 @@ Explore user intent, constraints, and alternative approaches before planning or 
 
 ### Guardrails
 1. **No implementation or planning before design approval** - brainstorm produces a design document, not code or task plans
-2. **One question at a time** - ask clarifying questions sequentially, not in batches
+2. **One question at a time** - ask clarification and approval questions through the available asynchronous question tool first, following `../_shared/core/clarification-protocol.md`; fall back to a permitted question tool or plain text. Continue independent work while waiting, and never infer approval from silence or a preselected option.
 3. **Always propose 2-3 approaches** - mechanistically distinct when possible; label each `tactical` or `structural`. The recommended option defaults to `structural` and must address the root cause. Recommend `tactical` only for genuinely throwaway scope, not merely because of deadline or effort pressure; include trade-off analysis.
 4. **Prose before matrix** - explain each approach with scenario, plain-language mechanism, solves/leaves, and cost feel; then comparison matrix; then recommendation. Do not lead with matrix-only output
 5. **Section-by-section design** - present design incrementally with user confirmation at each step
