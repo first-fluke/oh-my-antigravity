@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "14.2.0",
-  "releaseDate": "2026-09-06T04:40:28.081Z",
+  "releaseDate": "2026-09-06T10:38:41.468Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -315,9 +315,14 @@
       "size": 469
     },
     {
+      "path": ".agents/oma-config.cue",
+      "sha256": "da54f3d10cda452a1eba259225383e122d916d85bfca895c0c5c4326c601cc30",
+      "size": 12163
+    },
+    {
       "path": ".agents/oma-config.yaml",
-      "sha256": "67357d3d7226abd0b8f6bb03b8a2b22a5e73dd8fe8afe357a205222cf4fd7da3",
-      "size": 29493
+      "sha256": "e3eeced759a767b37b395c4c0c8e3d9902e015bfe01c3f422fb75c2bdae39cc6",
+      "size": 29818
     },
     {
       "path": ".agents/rules/backend.md",
@@ -421,8 +426,8 @@
     },
     {
       "path": ".agents/skills/_shared/core/clarification-protocol.md",
-      "sha256": "16b9487b58264fc3d351228febbae39b017d94dd5549ad89f87b223ab3e3020b",
-      "size": 1152
+      "sha256": "4167d46173def3eb1e99d029bb1751458ab24fcd2908d709757e2ef231cb84f3",
+      "size": 2310
     },
     {
       "path": ".agents/skills/_shared/core/common-checklist.md",
@@ -446,8 +451,8 @@
     },
     {
       "path": ".agents/skills/_shared/core/execution-policy.md",
-      "sha256": "1edb3e610840675a8fde5614b9e12a585f34eadaa08fb4a37be9cbe231cc51ec",
-      "size": 2237
+      "sha256": "b91b525d4d261b92e4a86cd44649ecb45b7d21eaa6193d86da092c70ea68d9d5",
+      "size": 2475
     },
     {
       "path": ".agents/skills/_shared/core/lessons-learned.md",
@@ -486,8 +491,8 @@
     },
     {
       "path": ".agents/skills/_shared/core/vendor-detection.md",
-      "sha256": "5ae02fd6091334035fb67f874ddd38a0d2cac3775be85c89631859ef00be7cbb",
-      "size": 4318
+      "sha256": "6c00a12b1cea682beba10359f60a439c797ed86b7e80a22c4a07ed80c1e715c0",
+      "size": 4478
     },
     {
       "path": ".agents/skills/_shared/runtime/event-spec.md",
@@ -506,8 +511,8 @@
     },
     {
       "path": ".agents/skills/_shared/runtime/execution-protocols/codex.md",
-      "sha256": "313317e2c4b46e6dbc9058cd812883bef4810bec0b4592b095974c79860be908",
-      "size": 1521
+      "sha256": "49c0df28f1a919bf6e612219c53f20d15952abadadecfd14e3d628569896076b",
+      "size": 2045
     },
     {
       "path": ".agents/skills/_shared/runtime/execution-protocols/commandcode.md",
@@ -716,8 +721,8 @@
     },
     {
       "path": ".agents/skills/oma-brainstorm/SKILL.md",
-      "sha256": "3d52bf5d0a9809c84299458846037be414b17462c4df4598ac6bb7f55f08fa31",
-      "size": 10428
+      "sha256": "1cd5cf3560dff3af8784014d86dab2b5d3c0e5904cf5a4c84aeed43a28473ad8",
+      "size": 10684
     },
     {
       "path": ".agents/skills/oma-brainstorm/resources/triz-lite.md",
@@ -2001,8 +2006,8 @@
     },
     {
       "path": ".agents/workflows/brainstorm.md",
-      "sha256": "2861048b4a3f78c835880645b8d3af0b8ced3d8b3e2292e648afa634998035f2",
-      "size": 10510
+      "sha256": "4c1d219d69bb16c22ff4acb5ed9076c6ebb37708c32f9f95ae7cb98af3fe1a7a",
+      "size": 10775
     },
     {
       "path": ".agents/workflows/convert.md",
@@ -2121,6 +2126,6 @@
   "metadata": {
     "skillCount": 33,
     "workflowCount": 24,
-    "totalFiles": 422
+    "totalFiles": 423
   }
 }
