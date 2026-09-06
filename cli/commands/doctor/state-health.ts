@@ -1,12 +1,13 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  AGENTS_STATE_ARCHIVE_DIR,
-  AGENTS_STATE_DIR,
-  agentsPathFromRoot,
-} from "../../constants/paths.js";
+import { AGENTS_STATE_DIR, agentsPathFromRoot } from "../../constants/paths.js";
 import { isGitRepo, isPathGitIgnored } from "../../io/gitignore.js";
-import { indexPath, sessionsDir } from "../../state/events.js";
+import {
+  listSessionIds,
+  readableIndexPath,
+  sessionArchiveRoots,
+  sessionDir,
+} from "../../state/events.js";
 import { isRecord } from "../../utils/type-guards.js";
 import type {
   HookOrderDoctorCheck,
@@ -272,7 +273,7 @@ function collectHookOrder(projectDir: string): HookOrderDoctorCheck[] {
 }
 
 function collectIndex(projectDir: string): StateIndexDoctorCheck {
-  const path = indexPath(projectDir);
+  const path = readableIndexPath(projectDir);
   if (!existsSync(path)) {
     return {
       path,
@@ -301,8 +302,9 @@ function collectIndex(projectDir: string): StateIndexDoctorCheck {
         ),
       )
     : {};
+  const sessionIds = new Set(listSessionIds(projectDir));
   const missingActive = Object.entries(active)
-    .filter(([, sid]) => !existsSync(join(sessionsDir(projectDir), sid)))
+    .filter(([, sid]) => !sessionIds.has(sid))
     .map(([category, sid]) => ({ category, sid }));
   return { path, exists: true, parseOk: true, active, missingActive };
 }
@@ -331,16 +333,13 @@ function countInvalidEventLines(path: string): number {
 }
 
 function collectSessions(projectDir: string): StateSessionDoctorCheck[] {
-  const root = sessionsDir(projectDir);
-  if (!existsSync(root)) return [];
   const sessions: StateSessionDoctorCheck[] = [];
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const sessionPath = join(root, entry.name);
+  for (const sid of listSessionIds(projectDir)) {
+    const sessionPath = sessionDir(projectDir, sid);
     const metaFile = join(sessionPath, "meta.json");
     const metaOk = !existsSync(metaFile) || parseJsonFile(metaFile).ok;
     sessions.push({
-      sid: entry.name,
+      sid,
       metaOk,
       invalidEventLines: countInvalidEventLines(
         join(sessionPath, "events.jsonl"),
@@ -351,15 +350,16 @@ function collectSessions(projectDir: string): StateSessionDoctorCheck[] {
 }
 
 function countArchiveSessions(projectDir: string): number {
-  const root = agentsPathFromRoot(projectDir, AGENTS_STATE_ARCHIVE_DIR);
-  if (!existsSync(root)) return 0;
   let total = 0;
-  for (const bucket of readdirSync(root, { withFileTypes: true })) {
-    if (!bucket.isDirectory()) continue;
-    const bucketPath = join(root, bucket.name);
-    total += readdirSync(bucketPath, { withFileTypes: true }).filter((entry) =>
-      entry.isDirectory(),
-    ).length;
+  for (const root of sessionArchiveRoots(projectDir)) {
+    if (!existsSync(root)) continue;
+    for (const bucket of readdirSync(root, { withFileTypes: true })) {
+      if (!bucket.isDirectory()) continue;
+      const bucketPath = join(root, bucket.name);
+      total += readdirSync(bucketPath, { withFileTypes: true }).filter(
+        (entry) => entry.isDirectory(),
+      ).length;
+    }
   }
   return total;
 }

@@ -92,7 +92,7 @@ describe("inject-log privacy (D52/D57)", () => {
   });
 
   describe("writeInjectLog", () => {
-    it("writes a redacted log under .agents/state (gitignored)", () => {
+    it("writes a redacted log under the home profile", () => {
       const path = writeInjectLog(
         projectDir,
         sid,
@@ -105,7 +105,7 @@ describe("inject-log privacy (D52/D57)", () => {
         }),
       );
       expect(path).not.toBeNull();
-      expect(path).toContain(join(".agents", "state", "sessions"));
+      expect(path).toContain(join("u", "0", "sessions"));
       expect(path).toContain(join(sid, "inject-log"));
 
       const content = readFileSync(path as string, "utf-8");

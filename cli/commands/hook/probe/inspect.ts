@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { eventsPath, readableIndexPath } from "../../../state/events.js";
 import type { ProbeStatus, VendorProbeResult } from "./types.js";
 import { type ProbeVendor, VENDOR_CASES } from "./vendor-cases.js";
 
@@ -111,7 +112,7 @@ export function readChainOrder(
 }
 
 export function readActiveSid(projectDir: string): string | null {
-  const path = join(projectDir, ".agents", "state", "sessions", "_index.json");
+  const path = readableIndexPath(projectDir);
   if (!existsSync(path)) return null;
   try {
     const index = JSON.parse(readFileSync(path, "utf-8")) as {
@@ -124,14 +125,7 @@ export function readActiveSid(projectDir: string): string | null {
 }
 
 export function readEventKinds(projectDir: string, sid: string): string[] {
-  const path = join(
-    projectDir,
-    ".agents",
-    "state",
-    "sessions",
-    sid,
-    "events.jsonl",
-  );
+  const path = eventsPath(projectDir, sid);
   if (!existsSync(path)) return [];
   return readFileSync(path, "utf-8")
     .trim()

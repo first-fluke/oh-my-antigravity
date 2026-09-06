@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   mkdirSync,
   readdirSync,
@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { hostname } from "node:os";
 import { join } from "node:path";
+import { projectStateDir } from "./session-storage.ts";
 
 const sleeper = new Int32Array(new SharedArrayBuffer(4));
 
@@ -71,9 +72,33 @@ export function withStateIndexLock<T>(
   action: () => T,
   timeoutMs = 2000,
 ): T {
-  const root = join(projectDir, ".agents", "state", "locks");
-  mkdirSync(root, { recursive: true });
-  const lock = join(root, "session-index");
+  return withLock(projectDir, "session-index", action, timeoutMs);
+}
+
+/** Serializes session writes with the final migration copy and path switch. */
+export function withSessionWriteLock<T>(
+  projectDir: string,
+  sid: string,
+  action: () => T,
+): T {
+  // Hashing also keeps legacy session IDs from becoming lock path components.
+  return withLock(
+    projectDir,
+    `session-${createHash("sha256").update(sid).digest("hex")}`,
+    action,
+    2000,
+  );
+}
+
+function withLock<T>(
+  projectDir: string,
+  name: string,
+  action: () => T,
+  timeoutMs: number,
+): T {
+  const root = join(projectStateDir(projectDir), "locks");
+  mkdirSync(root, { recursive: true, mode: 0o700 });
+  const lock = join(root, name);
   const owner = `owner-${process.pid}-${randomUUID()}`;
   const candidate = join(root, owner);
   mkdirSync(candidate);

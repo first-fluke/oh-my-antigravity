@@ -258,7 +258,7 @@ agents:
 | **Stop hook 门禁** | persistent workflow 处于激活状态时阻止会话终止，并在放行前运行配置好的门禁脚本。可执行的只有 `typecheck`、`test`、`lint` 三个；agent 往状态文件里写别的东西只会被忽略，绝不会被执行。加固次数上限为 5 次，因此一个始终飘红的门禁不会把你困住。 | [`.agents/hooks/core/persistent-mode.ts`](../.agents/hooks/core/persistent-mode.ts) |
 | **Anti-Circumvention 门禁** | `oma ralph verify --json` 会核查四样抄近路伪造不了的产出物：ultrawork 的 phase 记录、plan JSON、一个**独立 QA agent** 的 result 文件，以及一个**独立 refactor agent** 的 result 文件。产出物缺失就说明这个 phase 没跑过，自述里怎么写都不算数。 | [`.agents/workflows/ralph.md`](../.agents/workflows/ralph.md) |
 | **独立 judge** | 作为拥有全新上下文的独立 agent 启动，只告知标准本身，绝不告知实现方声称自己修好了什么。每次 iteration 都会重新校验**每一条**标准，已经 PASS 的也不例外，因为 C1 悄悄回退往往正是修 C2 时发生的。 | [`judge-protocol.md`](../.agents/workflows/ralph/resources/judge-protocol.md) |
-| **事件溯源状态** | 每一次门禁通过、门禁失败和判定，都会向 `.agents/state/sessions/{sid}/events.jsonl` 追加一行 JSON，并盖上厂商与运行时会话 id。只追加、跨厂商、跑完之后仍可审计。 | [`event-spec.md`](../.agents/skills/_shared/runtime/event-spec.md) |
+| **事件溯源状态** | 每一次门禁通过、门禁失败和判定，都会向 `~/.oma/u/0/sessions/{sid}/events.jsonl` 追加一行 JSON，并盖上厂商与运行时会话 id。只追加、跨厂商、跑完之后仍可审计。 | [`event-spec.md`](../.agents/skills/_shared/runtime/event-spec.md) |
 | **按 agent 的检查组合** | `oma verify <agent>` 会运行共享核心检查（scope 越界、charter alignment、硬编码密钥、TODO 扫描、declared outputs），再加上按类型的检查（TypeScript strict、tests、raw SQL、Flutter analyze、inline styles）。 | `oma verify <agent>` |
 | **skill 评测框架** | `oma skill eval` 不去假定某个 skill 有用，而是在留出任务上对比 treatment 与 baseline，测出实际的效用增益。`oma skill optimize` 只保留那些能提高实测增益的改动。 | [skill-eval 指南](../web/docs/guide/skill-eval.md) |
 

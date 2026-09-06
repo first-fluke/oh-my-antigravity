@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import path from "node:path";
 import pc from "picocolors";
+import { eventsPath, listSessionIds } from "../../../state/events.js";
 
 /**
  * Harness refine signals (design-prime-agent-adoption, Track A reduced form).
@@ -98,15 +98,13 @@ function suggestFor(
 }
 
 /**
- * Scan `.agents/state/sessions/<sid>/events.jsonl` for refine-relevant events
+ * Scan this project's profile and legacy session events for refine signals
  * newer than the window cutoff and group them into signals.
  */
 export function collectHarnessSignals(
   cwd: string,
   windowDays: number,
 ): HarnessSignal[] {
-  const sessionsDir = path.join(cwd, ".agents", "state", "sessions");
-  if (!fs.existsSync(sessionsDir)) return [];
   const cutoffMs = Date.now() - windowDays * 86_400_000;
 
   const groups = new Map<
@@ -124,16 +122,15 @@ export function collectHarnessSignals(
 
   let sessionDirs: string[];
   try {
-    sessionDirs = fs.readdirSync(sessionsDir);
+    sessionDirs = listSessionIds(cwd);
   } catch {
     return [];
   }
 
   for (const sid of sessionDirs) {
-    const eventsPath = path.join(sessionsDir, sid, "events.jsonl");
     let raw: string;
     try {
-      raw = fs.readFileSync(eventsPath, "utf-8");
+      raw = fs.readFileSync(eventsPath(cwd, sid), "utf-8");
     } catch {
       continue;
     }

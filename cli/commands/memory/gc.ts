@@ -11,6 +11,7 @@ import {
   COORDINATION_STORE_REL,
   LEGACY_SERENA_MEMORY_REL,
 } from "../../io/memory.js";
+import { listSessionIds, readIndex, sessionDir } from "../../state/events.js";
 import type {
   MemoryGcConfig,
   MemoryGcOptions,
@@ -20,7 +21,6 @@ import type {
 import { evaluateCueFile } from "../../utils/cue.js";
 import { findFileUpwards, resolveProjectRoot } from "../../utils/fs-utils.js";
 
-const SESSIONS_REL = join(".agents", "state", "sessions");
 // Memory-store dirs swept for ephemeral artifacts: the canonical oma store
 // plus the legacy Serena dir (pre-move projects and leftover legacy files).
 const MEMORY_STORE_RELS = [COORDINATION_STORE_REL, LEGACY_SERENA_MEMORY_REL];
@@ -104,21 +104,8 @@ export function loadMemoryGcConfig(
 }
 
 /** Session ids that must never be pruned (the live session per worktree). */
-function activeSessionIds(sessionsDir: string): Set<string> {
-  const ids = new Set<string>();
-  const indexPath = join(sessionsDir, "_index.json");
-  if (!existsSync(indexPath)) return ids;
-  try {
-    const idx = JSON.parse(readFileSync(indexPath, "utf-8")) as {
-      active?: Record<string, unknown>;
-    };
-    for (const sid of Object.values(idx.active ?? {})) {
-      if (typeof sid === "string" && sid) ids.add(sid);
-    }
-  } catch {
-    // Unreadable index — protect nothing extra; the keep window still applies.
-  }
-  return ids;
+function activeSessionIds(projectDir: string): Set<string> {
+  return new Set(Object.values(readIndex(projectDir).active));
 }
 
 function gcSessions(
@@ -126,15 +113,11 @@ function gcSessions(
   keep: number,
   dryRun: boolean,
 ): { pruned: string[]; kept: number } {
-  const dir = join(baseDir, SESSIONS_REL);
-  if (!existsSync(dir)) return { pruned: [], kept: 0 };
-
-  const active = activeSessionIds(dir);
-  const entries = readdirSync(dir, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && e.name.startsWith("oma-"))
-    .map((e) => {
-      const path = join(dir, e.name);
-      return { name: e.name, path, mtimeMs: statSync(path).mtimeMs };
+  const active = activeSessionIds(baseDir);
+  const entries = listSessionIds(baseDir)
+    .map((name) => {
+      const path = sessionDir(baseDir, name);
+      return { name, path, mtimeMs: statSync(path).mtimeMs };
     })
     // Most-recently-modified first → keep window is LRU.
     .sort((a, b) => b.mtimeMs - a.mtimeMs);
@@ -189,7 +172,7 @@ function gcCoordinationArtifacts(
 
 /**
  * Garbage-collect project-local memory stores that accumulate unbounded:
- *   - L1 `.agents/state/sessions/`   — keep the most-recent `keep` sessions.
+ *   - L1 profile sessions (+ legacy project sessions), scoped to this project.
  *   - Memory store `.agents/state/memories/` (+ legacy `.serena/memories/`)
  *     — prune ephemeral cost/run artifacts only.
  *

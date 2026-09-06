@@ -10,6 +10,7 @@ import {
 
 export {
   createEventId,
+  createSessionId,
   deriveMeta,
   eventsPath,
   metaPath,

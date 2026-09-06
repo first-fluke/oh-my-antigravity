@@ -1,8 +1,8 @@
 import {
   appendFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
-  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -13,22 +13,18 @@ import { join } from "node:path";
 import {
   deriveMeta,
   eventsPath,
+  listSessionIds,
   metaPath,
   type OmaEvent,
   readEvents,
   readIndex,
   refreshMeta,
   type SessionMeta,
-  sessionsDir,
+  sessionDir,
   updateIndex,
 } from "../../state/events.js";
 import { resolveProjectRoot } from "../../utils/fs-utils.js";
-import {
-  archiveRoot,
-  collectState,
-  isValidSid,
-  parseOlderThan,
-} from "./sessions.js";
+import { archiveRoot, collectState, parseOlderThan } from "./sessions.js";
 import type { ArchiveResult, PurgeResult, RepairResult } from "./types.js";
 
 function isValidEvent(value: unknown): value is OmaEvent {
@@ -96,7 +92,7 @@ function sessionTimestampMs(
 ): number {
   const parsed = meta.createdAt ? Date.parse(meta.createdAt) : Number.NaN;
   if (!Number.isNaN(parsed)) return parsed;
-  return statSync(join(sessionsDir(projectDir), sid)).mtimeMs;
+  return statSync(sessionDir(projectDir, sid)).mtimeMs;
 }
 
 export function repairStateSessions(
@@ -112,19 +108,14 @@ export function repairStateSessions(
     reassignedActive: [],
     unchanged: true,
   };
-  const root = sessionsDir(projectDir);
-  const sessionIds = existsSync(root)
-    ? readdirSync(root, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && isValidSid(entry.name))
-        .map((entry) => entry.name)
-    : [];
+  const sessionIds = listSessionIds(projectDir);
 
   for (const sid of sessionIds) {
     const path = eventsPath(projectDir, sid);
     if (existsSync(path)) {
       const parsed = parseEventLines(readFileSync(path, "utf-8"));
       if (parsed.invalidLines.length > 0) {
-        const badPath = join(sessionsDir(projectDir), sid, "events.bad.jsonl");
+        const badPath = join(sessionDir(projectDir, sid), "events.bad.jsonl");
         result.quarantinedEvents.push({
           sid,
           invalidLines: parsed.invalidLines.length,
@@ -223,7 +214,7 @@ export function purgeStateSessions(args: {
     }
     result.purged.push(session.sid);
     if (!result.dryRun) {
-      rmSync(join(sessionsDir(projectDir), session.sid), {
+      rmSync(sessionDir(projectDir, session.sid), {
         recursive: true,
         force: true,
       });
@@ -288,7 +279,16 @@ export function archiveStateSessions(args: {
       mkdirSync(join(archiveRoot(projectDir), archiveBucket(session)), {
         recursive: true,
       });
-      renameSync(join(sessionsDir(projectDir), session.sid), to);
+      const from = sessionDir(projectDir, session.sid);
+      if (existsSync(to)) throw new Error(`Archive already exists: ${to}`);
+      try {
+        renameSync(from, to);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EXDEV") throw error;
+        // Legacy project sessions may live on a different volume from home.
+        cpSync(from, to, { recursive: true, errorOnExist: true, force: false });
+        rmSync(from, { recursive: true });
+      }
     }
   }
 

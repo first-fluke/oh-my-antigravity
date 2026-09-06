@@ -9,6 +9,10 @@ import {
   renderSelfHealingGateResult,
 } from "../../state/self-healing.js";
 import {
+  migrateLegacySessions,
+  sessionMigrationActions,
+} from "../../state/session-migration.js";
+import {
   exportSessionSummary,
   renderSessionSummaryResult,
 } from "../../state/session-summary.js";
@@ -149,6 +153,37 @@ function registerDecisionVerifyCommand(
 }
 
 export function registerState(program: Command): void {
+  addOutputOptions(
+    program
+      .command("state:migrate")
+      .description(
+        "Migrate legacy sessions to the home profile and remove verified originals",
+      )
+      .option(
+        "--include-active",
+        "Also migrate active sessions under session write locks",
+      )
+      .option("--dry-run", "Preview migration without writing files"),
+  ).action(
+    runAction(
+      async (options) => {
+        const result = migrateLegacySessions({
+          projectDir: resolveProjectRoot(),
+          dryRun: options.dryRun === true,
+          includeActive: options.includeActive === true,
+        });
+        if (resolveJsonMode(options))
+          console.log(JSON.stringify(result, null, 2));
+        else
+          console.log(
+            sessionMigrationActions(result).join("\n") ||
+              "No legacy sessions to migrate",
+          );
+        if (result.failed.length > 0) process.exitCode = 1;
+      },
+      { supportsJsonOutput: true },
+    ),
+  );
   // Explicit lookup avoids the legacy `state repair` reserved-word dispatch.
   addOutputOptions(
     program

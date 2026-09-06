@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { withStateIndexLock } from "../../.agents/hooks/core/state-index-lock.ts";
-import { readIndex, updateIndex } from "./events.js";
+import { projectStateDir, readIndex, updateIndex } from "./events.js";
 
 const cliModule = resolve(import.meta.dirname, "events.ts");
 const hookModule = resolve(
@@ -146,15 +146,15 @@ describe("state index concurrent writers", () => {
           20,
         ),
       ).toThrow("Timed out waiting for state index lock");
-      expect(readdirSync(join(root, ".agents/state/locks"))).toEqual([
+      expect(readdirSync(join(projectStateDir(root), "locks"))).toEqual([
         "session-index",
       ]);
     });
-    expect(readdirSync(join(root, ".agents/state/locks"))).toEqual([]);
+    expect(readdirSync(join(projectStateDir(root), "locks"))).toEqual([]);
   });
 
   it("recovers an empty directory left by interrupted lock release", () => {
-    mkdirSync(join(root, ".agents/state/locks/session-index"), {
+    mkdirSync(join(projectStateDir(root), "locks/session-index"), {
       recursive: true,
     });
     updateIndex(root, (index) => {

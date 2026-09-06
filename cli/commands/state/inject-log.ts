@@ -1,13 +1,13 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { sessionsDir } from "../../state/events.js";
+import { sessionDir } from "../../state/events.js";
 import { resolveProjectRoot } from "../../utils/fs-utils.js";
 import { collectArchivedState } from "./sessions.js";
 import type { InjectLogEntryRef, InjectLogView } from "./types.js";
 
 /** Locate the inject-log dir for a sid, live first then archived (D52). */
 function resolveInjectLogDir(projectDir: string, sid: string): string | null {
-  const live = join(sessionsDir(projectDir), sid, "inject-log");
+  const live = join(sessionDir(projectDir, sid), "inject-log");
   if (existsSync(live)) return live;
   const archived = collectArchivedState(projectDir).sessions.find(
     (session) => session.sid === sid,

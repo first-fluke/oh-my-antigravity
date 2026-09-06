@@ -1,6 +1,8 @@
 #!/usr/bin/env bun
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { ensureSessionStorage } from "./session-storage.ts";
+import { withSessionWriteLock } from "./state-index-lock.ts";
 import { sessionDir } from "./state-marker.ts";
 import type { MemoryFact } from "./vendor-renderer.ts";
 
@@ -8,7 +10,8 @@ import type { MemoryFact } from "./vendor-renderer.ts";
  * Per-boundary inject audit log (D52) with privacy guards (D57).
  *
  * Every boundary inject writes
- * `.agents/state/sessions/{sid}/inject-log/{ISO-ts}.md` containing the rendered
+ * `~/.oma/u/<profile>/sessions/{sid}/inject-log/{ISO-ts}.md` (or an existing
+ * legacy project session directory) containing the rendered
  * markdown, the recall query, and the facts returned — a forensic trail for
  * debugging "resume context looks wrong" issues.
  *
@@ -134,14 +137,17 @@ export function writeInjectLog(
   entry: InjectLogEntry,
 ): string | null {
   try {
-    const dir = injectLogDir(projectDir, sid);
-    mkdirSync(dir, { recursive: true, mode: 0o700 });
-    const path = join(dir, injectLogFilename(entry.boundaryAt));
-    writeFileSync(path, renderInjectLog(entry), {
-      encoding: "utf-8",
-      mode: 0o600,
+    return withSessionWriteLock(projectDir, sid, () => {
+      ensureSessionStorage(projectDir, sid);
+      const dir = injectLogDir(projectDir, sid);
+      mkdirSync(dir, { recursive: true, mode: 0o700 });
+      const path = join(dir, injectLogFilename(entry.boundaryAt));
+      writeFileSync(path, renderInjectLog(entry), {
+        encoding: "utf-8",
+        mode: 0o600,
+      });
+      return path;
     });
-    return path;
   } catch {
     return null;
   }

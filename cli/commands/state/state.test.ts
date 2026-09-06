@@ -15,6 +15,7 @@ import {
   eventsPath,
   metaPath,
   readIndex,
+  sessionArchiveRoot,
   sessionDir,
   sessionsDir,
 } from "../../state/events.js";
@@ -235,14 +236,7 @@ describe("state command helpers", () => {
     expect(existsSync(sessionDir(projectDir, "oma-old-done"))).toBe(false);
     expect(
       existsSync(
-        join(
-          projectDir,
-          ".agents",
-          "state",
-          "archive",
-          "2026-01",
-          "oma-old-done",
-        ),
+        join(sessionArchiveRoot(projectDir), "2026-01", "oma-old-done"),
       ),
     ).toBe(true);
     expect(renderArchiveResult(result)).toContain("OMA state archive");

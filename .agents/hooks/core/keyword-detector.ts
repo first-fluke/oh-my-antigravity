@@ -793,12 +793,12 @@ async function activateL1WorkflowSession(
   category = "main",
 ): Promise<string | null> {
   try {
-    const [{ setActiveSession }, { createEventId, emitEvent }] =
+    const [{ setActiveSession }, { createSessionId, emitEvent }] =
       await Promise.all([
         import("./state-marker.ts"),
         import("./state-emit.ts"),
       ]);
-    const sid = `oma-${createEventId()}`;
+    const sid = createSessionId();
     setActiveSession(projectDir, category, sid);
     await emitEvent(projectDir, sid, {
       kind: "session.created",

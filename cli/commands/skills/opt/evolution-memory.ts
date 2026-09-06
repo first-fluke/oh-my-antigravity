@@ -1,23 +1,18 @@
 import { createHash } from "node:crypto";
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-} from "node:fs";
+import { appendFileSync, mkdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import {
   AGENTS_RESULTS_DIR,
   agentsPathFromRoot,
 } from "../../../constants/paths.js";
 import {
-  createEventId,
+  createSessionId,
   emitEvent,
   emitEventWithMemory,
+  listSessionIds,
   type OmaEvent,
   readEvents,
-  sessionsDir,
+  sessionDir,
 } from "../../../state/events.js";
 import type { MemoryProvider } from "../../../types/memory.js";
 import type { SkillUtilityReport, TaskFixture } from "../eval.js";
@@ -136,18 +131,12 @@ export function loadLocalSkillEvolutionKnowledge(
   const patterns: string[] = [];
   const rejectedEditKeys: string[] = [];
   const acceptedEditKeys: string[] = [];
-  const root = sessionsDir(workspace);
-  if (!existsSync(root)) {
-    return { ...base, patterns, rejectedEditKeys, acceptedEditKeys };
-  }
-
   let entries: string[] = [];
   try {
-    entries = readdirSync(root)
-      .filter((entry) => entry !== "_index.json")
+    entries = listSessionIds(workspace)
       .map((entry) => {
         try {
-          const stat = statSync(join(root, entry));
+          const stat = statSync(sessionDir(workspace, entry));
           return stat.isDirectory() ? { entry, mtimeMs: stat.mtimeMs } : null;
         } catch {
           return null;
@@ -268,7 +257,7 @@ export async function createSkillEvolutionRecorder(args: {
   environmentHash?: string;
 }): Promise<SkillEvolutionRecorder> {
   const suiteHash = skillEvolutionSuiteHash(args.tasks);
-  const sid = `oma-skill-opt-${createEventId()}`;
+  const sid = createSessionId();
   const local = loadLocalSkillEvolutionKnowledge(
     args.workspace,
     args.skillId,

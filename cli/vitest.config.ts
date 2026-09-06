@@ -12,7 +12,10 @@ export default defineConfig({
     },
   },
   test: {
-    setupFiles: ["./test/setup-install-context.ts"],
+    setupFiles: [
+      "./test/setup-install-context.ts",
+      "./test/setup-session-storage.ts",
+    ],
     // The suite spawns many `bun cli.ts …` subprocesses (hook e2e, vendor
     // probes, install flows). Under full parallel load those routinely blow
     // vitest's 5s default even though they pass in isolation, so give every

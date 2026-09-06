@@ -12,9 +12,20 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { withStateIndexLock } from "./state-index-lock.ts";
+import {
+  ensureProfile,
+  ensureSessionStorage,
+  indexPath,
+  projectIdentity,
+  readableIndexPath,
+  sessionDir,
+} from "./session-storage.ts";
+import {
+  withSessionWriteLock,
+  withStateIndexLock,
+} from "./state-index-lock.ts";
 
-export const STATE_ROOT = ".agents/state/sessions";
+export * from "./session-storage.ts";
 
 export const RETRY_ROOT = ".agents/state/retry";
 
@@ -85,21 +96,12 @@ export interface SessionMeta {
   category: string;
   status: "active" | "completed" | "failed";
   createdAt?: string;
+  projectId?: string;
+  projectDir?: string;
+  profile?: string;
   currentPhase?: string;
   gatesPassedBy: Array<Record<string, unknown>>;
   pendingPeerReviews: Array<Record<string, unknown>>;
-}
-
-export function sessionsDir(projectDir: string): string {
-  return join(projectDir, STATE_ROOT);
-}
-
-export function indexPath(projectDir: string): string {
-  return join(sessionsDir(projectDir), "_index.json");
-}
-
-export function sessionDir(projectDir: string, sid: string): string {
-  return join(sessionsDir(projectDir), sid);
 }
 
 export function eventsPath(projectDir: string, sid: string): string {
@@ -144,7 +146,10 @@ function fsyncParent(path: string): void {
 export function atomicWriteJson(path: string, value: unknown): void {
   ensureParent(path);
   const tmp = `${path}.${process.pid}.${Date.now()}.tmp`;
-  writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
+  writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, {
+    encoding: "utf-8",
+    mode: 0o600,
+  });
   // Open read-write ("r+"): fsyncSync on a read-only handle fails with EPERM
   // on Windows, which aborts the metadata write even though the durable
   // JSONL event was already appended. See issue #613.
@@ -159,7 +164,7 @@ export function atomicWriteJson(path: string, value: unknown): void {
 }
 
 export function readIndex(projectDir: string): StateIndex {
-  const path = indexPath(projectDir);
+  const path = readableIndexPath(projectDir);
   if (!existsSync(path)) return defaultIndex();
   try {
     const parsed = JSON.parse(
@@ -180,6 +185,7 @@ export function updateIndex(
   mutate: (index: StateIndex) => void,
   maxRetries = 3,
 ): StateIndex {
+  ensureProfile();
   return withStateIndexLock(projectDir, () => {
     const path = indexPath(projectDir);
     for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -214,6 +220,8 @@ export function setActiveSession(
   category: string,
   sid: string,
 ): StateIndex {
+  // Validate ownership without creating an empty session for an active pointer.
+  sessionDir(projectDir, sid);
   return updateIndex(projectDir, (index) => {
     index.active[category] = sid;
   });
@@ -234,6 +242,16 @@ export function emitEvent(
   sid: string,
   event: Omit<Partial<OmaEvent>, "sid"> & { kind: string },
 ): OmaEvent {
+  return withSessionWriteLock(projectDir, sid, () =>
+    appendEvent(projectDir, sid, event),
+  );
+}
+
+function appendEvent(
+  projectDir: string,
+  sid: string,
+  event: Omit<Partial<OmaEvent>, "sid"> & { kind: string },
+): OmaEvent {
   const enriched: OmaEvent = {
     eventId: event.eventId ?? createEventId(),
     ts: event.ts ?? new Date().toISOString(),
@@ -248,9 +266,11 @@ export function emitEvent(
   };
   const path = eventsPath(projectDir, sid);
   try {
+    ensureSessionStorage(projectDir, sid);
     ensureParent(path);
     appendFileSync(path, `${JSON.stringify(enriched)}\n`, {
       encoding: "utf-8",
+      mode: 0o600,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -266,7 +286,7 @@ export function emitEvent(
     event.kind === "workflow.phase" ||
     event.kind === "session.ended"
   ) {
-    refreshMeta(projectDir, sid);
+    refreshMetaUnlocked(projectDir, sid);
   }
   return enriched;
 }
@@ -334,7 +354,17 @@ export function deriveMeta(sid: string, events: OmaEvent[]): SessionMeta {
 }
 
 export function refreshMeta(projectDir: string, sid: string): SessionMeta {
-  const meta = deriveMeta(sid, readEvents(projectDir, sid));
+  return withSessionWriteLock(projectDir, sid, () =>
+    refreshMetaUnlocked(projectDir, sid),
+  );
+}
+
+function refreshMetaUnlocked(projectDir: string, sid: string): SessionMeta {
+  ensureSessionStorage(projectDir, sid);
+  const meta = {
+    ...deriveMeta(sid, readEvents(projectDir, sid)),
+    ...projectIdentity(projectDir),
+  };
   atomicWriteJson(metaPath(projectDir, sid), meta);
   return meta;
 }

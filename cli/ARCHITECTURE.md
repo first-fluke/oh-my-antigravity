@@ -38,6 +38,10 @@ cli/
 
 The canonical event envelope, durable writes, session index operations, and metadata reducer live in `.agents/hooks/core/state-core.ts`. CLI `state/events.ts` adds the asynchronous memory adapter; standalone hooks use the same core through compatibility exports. `state-index-lock.ts` serializes index updates across CLI and hook processes. Keep the core dependency-free so installed standalone hooks can load it.
 
+`session-storage.ts` owns home profile paths (`~/.oma/u/0/sessions/`), project identity, and legacy project-session compatibility. Project-scoped consumers use `listSessionIds()` and `sessionDir()`; scanning `sessionsDir()` directly would include other projects. Active indexes and locks live under the selected profile's `projects/<project-id>/`. See [profile session storage](../docs/migrations/profile-sessions.md) for environment overrides and future account linkage.
+
+`state/session-migration.ts` implements migration 028 for install/update and `oma state migrate`. Copies are verified and flushed before originals are removed; temporary source renames make the path switch atomic and interrupted cleanup is retried. The index lock protects active pointers, and per-session write locks coordinate event/injection writes with migration. Acquire the index lock before a session lock whenever both are required. Explicit `--include-active` migration preserves active pointers; automatic install/update migration defers active sessions.
+
 Agent runs use `state/agent-results.ts` for structured claims, actual verification receipts, and content hashes. See [execution evidence and graph queries](../docs/migrations/execution-evidence.md) for usage and migration from Markdown-only completion.
 
 ## Path alias

@@ -1,17 +1,17 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  AGENTS_STATE_ARCHIVE_DIR,
-  agentsPathFromRoot,
-} from "../../constants/paths.js";
-import {
   deriveMeta,
+  isValidSid,
+  listSessionIds,
   type OmaEvent,
   readEvents,
   readIndex,
   refreshMeta,
   type SessionMeta,
-  sessionsDir,
+  sessionArchiveRoot,
+  sessionArchiveRoots,
+  sessionDir,
   setActiveSession,
   sortEvents,
 } from "../../state/events.js";
@@ -24,7 +24,7 @@ import type {
 } from "./types.js";
 
 function loadSessionMeta(projectDir: string, sid: string): SessionMeta {
-  const metaPath = join(sessionsDir(projectDir), sid, "meta.json");
+  const metaPath = join(sessionDir(projectDir, sid), "meta.json");
   if (existsSync(metaPath)) {
     try {
       return JSON.parse(readFileSync(metaPath, "utf-8")) as SessionMeta;
@@ -82,14 +82,9 @@ function loadArchivedSession(
 
 export function collectState(projectDir = resolveProjectRoot()): StateView {
   const index = readIndex(projectDir);
-  const root = sessionsDir(projectDir);
   const sessions: SessionMeta[] = [];
-  if (existsSync(root)) {
-    for (const entry of readdirSync(root, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      if (!isValidSid(entry.name)) continue;
-      sessions.push(loadSessionMeta(projectDir, entry.name));
-    }
+  for (const sid of listSessionIds(projectDir)) {
+    sessions.push(loadSessionMeta(projectDir, sid));
   }
   sessions.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
   return { index, sessions };
@@ -98,24 +93,25 @@ export function collectState(projectDir = resolveProjectRoot()): StateView {
 export function collectArchivedState(
   projectDir = resolveProjectRoot(),
 ): ArchivedStateView {
-  const root = archiveRoot(projectDir);
   const sessions: ArchivedSession[] = [];
-  if (existsSync(root)) {
-    for (const bucketEntry of readdirSync(root, { withFileTypes: true })) {
-      if (!bucketEntry.isDirectory()) continue;
-      const bucket = bucketEntry.name;
-      const bucketPath = join(root, bucket);
-      for (const sessionEntry of readdirSync(bucketPath, {
-        withFileTypes: true,
-      })) {
-        if (!sessionEntry.isDirectory()) continue;
-        sessions.push(
-          loadArchivedSession(
-            bucket,
-            sessionEntry.name,
-            join(bucketPath, sessionEntry.name),
-          ),
-        );
+  for (const root of archiveRoots(projectDir)) {
+    if (existsSync(root)) {
+      for (const bucketEntry of readdirSync(root, { withFileTypes: true })) {
+        if (!bucketEntry.isDirectory()) continue;
+        const bucket = bucketEntry.name;
+        const bucketPath = join(root, bucket);
+        for (const sessionEntry of readdirSync(bucketPath, {
+          withFileTypes: true,
+        })) {
+          if (!sessionEntry.isDirectory()) continue;
+          sessions.push(
+            loadArchivedSession(
+              bucket,
+              sessionEntry.name,
+              join(bucketPath, sessionEntry.name),
+            ),
+          );
+        }
       }
     }
   }
@@ -129,7 +125,7 @@ export function viewSession(
   sid: string,
   projectDir = resolveProjectRoot(),
 ): SessionView {
-  const livePath = join(sessionsDir(projectDir), sid);
+  const livePath = sessionDir(projectDir, sid);
   if (existsSync(livePath)) {
     const events = readEvents(projectDir, sid);
     return { meta: deriveMeta(sid, events), events, archived: false };
@@ -165,14 +161,7 @@ export function activateStateSession(
  * Accepts the formats actually used by oma (e.g. "oma-main", "sid-1").
  * Rejects anything containing ".." or characters outside [A-Za-z0-9._-].
  */
-export function isValidSid(name: string): boolean {
-  return (
-    name.length > 0 &&
-    name.length <= 128 &&
-    !name.includes("..") &&
-    /^[A-Za-z0-9._-]+$/.test(name)
-  );
-}
+export { isValidSid };
 
 export function parseOlderThan(value: string): number {
   const match = value.trim().match(/^(\d+)([dhm]?)$/i);
@@ -192,5 +181,9 @@ export function parseOlderThan(value: string): number {
 }
 
 export function archiveRoot(projectDir: string): string {
-  return agentsPathFromRoot(projectDir, AGENTS_STATE_ARCHIVE_DIR);
+  return sessionArchiveRoot(projectDir);
+}
+
+export function archiveRoots(projectDir: string): string[] {
+  return sessionArchiveRoots(projectDir);
 }

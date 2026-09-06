@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   deriveMeta,
+  ensureSessionStorage,
   eventsPath,
   type OmaEvent,
   readEvents,
@@ -76,6 +77,7 @@ const CANONICAL: OmaEvent[] = [
 const SHUFFLE_ORDER = [4, 1, 3, 0, 5, 2];
 
 function writeEventsInOrder(projectDir: string, events: OmaEvent[]): void {
+  ensureSessionStorage(projectDir, SID);
   mkdirSync(sessionDir(projectDir, SID), { recursive: true });
   for (const event of events) {
     appendFileSync(eventsPath(projectDir, SID), `${JSON.stringify(event)}\n`);

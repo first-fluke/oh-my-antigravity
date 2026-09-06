@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { run as runKeywordDetector } from "../../.agents/hooks/core/keyword-detector.ts";
 import { run as runStateBoundary } from "../../.agents/hooks/core/state-boundary.ts";
 import type { HandlerCtx } from "../../.agents/hooks/core/types.ts";
+import { indexPath } from "../state/events.js";
 
 const REL = join(".grok", "rules", "oma-state.md");
 
@@ -29,9 +30,7 @@ describe("grok-context", () => {
     );
 
     expect(boundary).toMatchObject({ type: "context" });
-    expect(
-      existsSync(join(dir, ".agents", "state", "sessions", "_index.json")),
-    ).toBe(true);
+    expect(existsSync(indexPath(dir))).toBe(true);
     expect(existsSync(join(dir, REL))).toBe(false);
   });
 });

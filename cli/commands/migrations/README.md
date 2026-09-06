@@ -47,4 +47,5 @@ export const migrateExample: Migration = {
 | 001 | `001-agents-dir.ts` | `.agent/` → `.agents/`, legacy skill/agent renames, `.cursor/skills` cleanup |
 | 002 | `002-shared-layout.ts` | `_shared/` flat → `core/conditional/runtime` nested structure |
 | 003 | `003-oma-config.ts` | `.agents/config/user-preferences.yaml` → `.agents/oma-config.yaml` |
+| 028 | `028-profile-sessions.ts` | Verified copy of inactive legacy sessions and archives to home profile 0; removes verified originals without backups and defers active sessions |
 <!-- oma-docs:ignore-end -->

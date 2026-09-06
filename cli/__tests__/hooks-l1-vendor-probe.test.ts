@@ -98,27 +98,17 @@ function getAdditionalContext(vendor: Vendor, raw: string): string {
   return hookSpecificOutput.additionalContext as string;
 }
 
+import { eventsPath, indexPath, metaPath } from "../state/events.js";
+
 function readIndex(projectDir: string): { active: Record<string, string> } {
-  return JSON.parse(
-    readFileSync(
-      join(projectDir, ".agents", "state", "sessions", "_index.json"),
-      "utf-8",
-    ),
-  );
+  return JSON.parse(readFileSync(indexPath(projectDir), "utf-8"));
 }
 
 function readEvents(
   projectDir: string,
   sid: string,
 ): Record<string, unknown>[] {
-  const path = join(
-    projectDir,
-    ".agents",
-    "state",
-    "sessions",
-    sid,
-    "events.jsonl",
-  );
+  const path = eventsPath(projectDir, sid);
   return readFileSync(path, "utf-8")
     .trim()
     .split("\n")
@@ -222,7 +212,7 @@ describe("L1 hook vendor probe", () => {
 
       const index = readIndex(projectDir);
       const sid = index.active.main;
-      expect(sid).toMatch(/^oma-/);
+      expect(sid).toMatch(/^\d{4}-\d{2}-\d{2}_[A-Za-z0-9_-]{16}$/);
       if (!sid) throw new Error("expected active main sid");
 
       const events = readEvents(projectDir, sid);
@@ -240,11 +230,7 @@ describe("L1 hook vendor probe", () => {
         kind: "boundary",
         vendor,
       });
-      expect(
-        existsSync(
-          join(projectDir, ".agents", "state", "sessions", sid, "meta.json"),
-        ),
-      ).toBe(true);
+      expect(existsSync(metaPath(projectDir, sid))).toBe(true);
     },
   );
 
@@ -342,7 +328,7 @@ describe("L1 hook vendor probe", () => {
 
       const firstIndex = readIndex(projectDir);
       const sid = firstIndex.active.main;
-      expect(sid).toMatch(/^oma-/);
+      expect(sid).toMatch(/^\d{4}-\d{2}-\d{2}_[A-Za-z0-9_-]{16}$/);
       if (!sid) throw new Error("expected active main sid");
 
       const reopenedOutput = runHook("state-boundary.ts", reopenedInput, env);
