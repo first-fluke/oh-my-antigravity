@@ -24,21 +24,20 @@ describe("selectedPresetVendors", () => {
 });
 
 describe("resolveDefaultPreset", () => {
-  // Regression for #580: an OpenCode-only install must NOT default to a
-  // misleading single-vendor preset; it lands on the neutral "mixed".
-  it("defaults OpenCode-only fresh installs to 'mixed', not a single vendor", () => {
-    expect(resolveDefaultPreset(null, ["opencode"])).toBe("mixed");
+  // Fresh installs follow their invoking runtime without model pins.
+  it("defaults OpenCode-only fresh installs to auto", () => {
+    expect(resolveDefaultPreset(null, ["opencode"])).toBe("auto");
   });
 
-  it("defaults other native-dispatch-only selections to 'mixed'", () => {
+  it("defaults other native-dispatch-only selections to auto", () => {
     expect(resolveDefaultPreset(null, ["grok", "kiro", "copilot"])).toBe(
-      "mixed",
+      "auto",
     );
   });
 
-  it("uses the first preset-backed vendor when one is selected", () => {
-    expect(resolveDefaultPreset(null, ["claude"])).toBe("claude");
-    expect(resolveDefaultPreset(null, ["opencode", "codex"])).toBe("codex");
+  it("follows the runtime even when preset-backed vendors are selected", () => {
+    expect(resolveDefaultPreset(null, ["claude"])).toBe("auto");
+    expect(resolveDefaultPreset(null, ["opencode", "codex"])).toBe("auto");
   });
 
   it("preserves an existing built-in preset verbatim on re-install", () => {
@@ -53,12 +52,10 @@ describe("resolveDefaultPreset", () => {
     );
   });
 
-  it("keeps the default full-vendor install on 'claude' (non-interactive parity)", () => {
-    // The non-interactive fresh install seeds the full vendor list, which
-    // includes claude first — preserving the historical model_preset: claude.
+  it("uses auto for full-vendor installs", () => {
     expect(
       resolveDefaultPreset(null, ["claude", "codex", "cursor", "qwen"]),
-    ).toBe("claude");
+    ).toBe("auto");
   });
 });
 

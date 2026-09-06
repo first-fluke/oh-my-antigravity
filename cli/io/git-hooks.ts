@@ -61,7 +61,8 @@ set -eu
 msg_file="$1"
 repo_root=$(git rev-parse --show-toplevel)
 allow_file="$repo_root/${OMA_HOOKS_DIR}/${CO_AUTHORS_ALLOW_FILE}"
-oma_config="$repo_root/.agents/oma-config.yaml"
+oma_config_cue="$repo_root/.agents/oma-config.cue"
+oma_config_yaml="$repo_root/.agents/oma-config.yaml"
 
 allowed=$(
 	{
@@ -73,8 +74,16 @@ allowed=$(
 
 		# The \`email:\` key inside the co_author block. Scoped to the lines
 		# following \`co_author:\` so an unrelated \`email:\` is not picked up.
-		if [ -f "$oma_config" ]; then
-			grep -A 3 '^[[:space:]]*co_author:' "$oma_config" |
+		# Prefers oma-config.cue, falls back to oma-config.yaml.
+		config_file=""
+		if [ -f "$oma_config_cue" ]; then
+			config_file="$oma_config_cue"
+		elif [ -f "$oma_config_yaml" ]; then
+			config_file="$oma_config_yaml"
+		fi
+
+		if [ -n "$config_file" ]; then
+			grep -A 5 '^[[:space:]]*co_author:' "$config_file" |
 				grep -E '^[[:space:]]*email:' |
 				sed -e 's/.*email:[[:space:]]*//' -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\\$//"
 		fi

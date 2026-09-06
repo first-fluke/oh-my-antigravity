@@ -219,8 +219,13 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
         runMigrations(cwd, { vendors: migrationVendors });
 
         // Preserve user-customized config files before bulk copy
+        const userPrefsCuePath = join(cwd, ".agents", "oma-config.cue");
         const userPrefsPath = join(cwd, ".agents", "oma-config.yaml");
         const mcpPath = join(cwd, ".agents", "mcp.json");
+        const savedUserPrefsCue =
+          !force && existsSync(userPrefsCuePath)
+            ? readFileSync(userPrefsCuePath)
+            : null;
         const savedUserPrefs =
           !force && existsSync(userPrefsPath)
             ? readFileSync(userPrefsPath)
@@ -244,6 +249,8 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
         }
 
         // Restore user-customized config files
+        if (savedUserPrefsCue)
+          writeFileSync(userPrefsCuePath, savedUserPrefsCue);
         if (savedUserPrefs) writeFileSync(userPrefsPath, savedUserPrefs);
         if (savedMcp) writeFileSync(mcpPath, savedMcp);
 

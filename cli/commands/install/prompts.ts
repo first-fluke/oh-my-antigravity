@@ -46,18 +46,13 @@ export function selectedPresetVendors(vendors: CliVendor[]): CliVendor[] {
  *
  *   1. an existing preset (re-install) is preserved verbatim — built-in *or*
  *      custom (e.g. a generated OpenCode preset) — so install never clobbers it;
- *   2. else the preset matching the first preset-backed vendor selected;
- *   3. else "mixed" — the neutral cross-vendor default. OpenCode-only and other
- *      native-dispatch installs land here instead of a misleading single-vendor
- *      preset (the root cause of #580).
+ *   2. otherwise auto follows the invoking vendor's own agent configuration.
  */
 export function resolveDefaultPreset(
   existingPreset: string | null,
-  vendors: CliVendor[],
+  _vendors: CliVendor[],
 ): string {
-  if (existingPreset) return existingPreset;
-  const [presetVendor] = selectedPresetVendors(vendors);
-  return presetVendor ?? "mixed";
+  return existingPreset ?? "auto";
 }
 
 export async function promptLanguage(
@@ -101,6 +96,11 @@ export async function promptModelPreset(
     label: string;
     hint: string;
   }[] = [
+    {
+      value: "auto",
+      label: "Auto (recommended)",
+      hint: "Use the current CLI's native agent configuration",
+    },
     {
       value: "claude",
       label: "Claude Code",
@@ -147,8 +147,8 @@ export async function promptModelPreset(
   if (selectedPresetVendors(vendors).length === 0) {
     p.log.info(
       pc.dim(
-        "Selected CLI(s) use native subagent dispatch. model_preset only " +
-          "affects the cross-vendor 'oma agent spawn' fallback.",
+        "Auto follows the current CLI's agent configuration. Choose a fixed " +
+          "preset only to pin models or route agents across vendors.",
       ),
     );
     const configure = await p.confirm({
@@ -165,18 +165,19 @@ export async function promptModelPreset(
     }
   }
 
-  // Seed the select with a built-in option value — a custom preset cannot be a
-  // select initialValue, so fall back to "mixed" when the default isn't built-in.
-  const initialPreset = BUILT_IN_PRESET_OPTIONS.some(
-    (o) => o.value === defaultPreset,
-  )
-    ? defaultPreset
-    : "mixed";
+  // Keep custom presets selectable so a re-install preserves the user's choice.
+  if (!BUILT_IN_PRESET_OPTIONS.some((o) => o.value === defaultPreset)) {
+    BUILT_IN_PRESET_OPTIONS.unshift({
+      value: defaultPreset,
+      label: defaultPreset,
+      hint: "Current custom preset",
+    });
+  }
 
   const modelPreset = await p.select({
     message: "Model preset?",
     options: BUILT_IN_PRESET_OPTIONS,
-    initialValue: initialPreset,
+    initialValue: defaultPreset,
   });
 
   if (p.isCancel(modelPreset)) {

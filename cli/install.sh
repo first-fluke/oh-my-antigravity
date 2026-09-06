@@ -143,6 +143,28 @@ install_serena() {
   fi
 }
 
+check_cue() {
+  if command_exists cue; then
+    ok "cue found"
+    return 0
+  fi
+  return 1
+}
+
+install_cue() {
+  info "Installing cue via brew..."
+  if command_exists brew; then
+    if brew install cue; then
+      ok "cue installed via brew"
+      return 0
+    fi
+    warn "brew install cue failed"
+  else
+    warn "Homebrew not found. Please install cue via 'brew install cue' or see https://cuelang.org/docs/install/"
+  fi
+  return 1
+}
+
 # ── Main ────────────────────────────────────────────────────────────
 main() {
   printf "\n${BOLD}${MAGENTA} 🛸 oh-my-agent installer ${RESET}\n\n"
@@ -173,6 +195,11 @@ main() {
   fi
   if [[ "${serena_setup_ready}" != "true" ]]; then
     warn "Continuing without Serena; install it later to enable code intelligence."
+  fi
+
+  # ── cue (for typed oma-config.cue) ──
+  if ! check_cue; then
+    install_cue || warn "Continuing without CUE; install it later for typed configuration."
   fi
 
   echo ""

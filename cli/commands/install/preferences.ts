@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { loadUserConfig } from "../../io/runtime-dispatch/config-loader.js";
 import { writeVendorsToConfig } from "../../platform/skills-installer.js";
 import type { CliVendor } from "../../types/index.js";
 
@@ -51,13 +52,14 @@ export function getExistingLanguage(targetDir: string): string | null {
 }
 
 export function getExistingPreset(targetDir: string): string | null {
-  const prefsPath = join(targetDir, ".agents", "oma-config.yaml");
-  if (!existsSync(prefsPath)) return null;
-
+  if (
+    !["oma-config.cue", "oma-config.yaml"].some((name) =>
+      existsSync(join(targetDir, ".agents", name)),
+    )
+  )
+    return null;
   try {
-    const prefs = readFileSync(prefsPath, "utf-8");
-    const match = prefs.match(/^model_preset:\s*([A-Za-z0-9_-]+)/m);
-    return match?.[1] ?? null;
+    return loadUserConfig(targetDir).model_preset ?? null;
   } catch {
     return null;
   }
@@ -73,6 +75,20 @@ export function patchUserConfig(
   modelPreset: string,
   vendors: CliVendor[],
 ): void {
+  const cuePath = join(installRoot, ".agents", "oma-config.cue");
+  if (existsSync(cuePath)) {
+    let content = readFileSync(cuePath, "utf-8");
+    content = content.replace(
+      /^([\t ]*language:[\t ]*)"[^"]*"([\t ]*(?:\/\/[^\n]*)?)$/m,
+      `$1"${language}"$2`,
+    );
+    content = content.replace(
+      /^([\t ]*model_preset:[\t ]*)"[^"]*"([\t ]*(?:\/\/[^\n]*)?)$/m,
+      `$1"${modelPreset}"$2`,
+    );
+    writeFileSync(cuePath, content);
+  }
+
   const userPrefsPath = join(installRoot, ".agents", "oma-config.yaml");
   if (existsSync(userPrefsPath)) {
     let prefs = readFileSync(userPrefsPath, "utf-8");

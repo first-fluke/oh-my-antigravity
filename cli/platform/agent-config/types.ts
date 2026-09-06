@@ -130,7 +130,7 @@ export interface OmaConfig {
   honcho?: import("../../utils/providers.js").HonchoConfig;
   brave?: import("../../utils/providers.js").BraveConfig;
   language: string;
-  /** Built-in preset key or custom_presets key */
+  /** "auto" inherits vendor agent settings; otherwise a built-in or custom preset key. */
   model_preset: string;
   date_format?: "ISO" | "US" | "EU";
   timezone?: string;

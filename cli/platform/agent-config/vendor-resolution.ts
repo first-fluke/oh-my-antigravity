@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { resolveAutoVendor } from "../../io/runtime-dispatch/detect.js";
+import { evaluateCueFile } from "../../utils/cue.js";
 import {
   BUILT_IN_PRESET_ALIASES,
   BUILT_IN_PRESETS,
@@ -11,7 +13,7 @@ import {
   parseOmaConfig,
   readCliConfig,
 } from "./config-io.js";
-import type { AgentSpec } from "./schemas.js";
+import { type AgentSpec, OmaConfigSchema } from "./schemas.js";
 import type {
   AgentId,
   BuiltInPresetKey,
@@ -58,6 +60,7 @@ function resolvePresetAgentSpec(
   config: OmaConfig,
   agentId: AgentId,
 ): AgentSpec | undefined {
+  if (config.model_preset === "auto") return undefined;
   const presetKey =
     BUILT_IN_PRESET_ALIASES[config.model_preset] ?? config.model_preset;
   const builtIn = BUILT_IN_PRESETS[presetKey as BuiltInPresetKey];
@@ -96,7 +99,8 @@ export function resolveVendor(
   const cwd = process.cwd();
   const cliConfig = readCliConfig(cwd);
 
-  // Attempt to load oma-config.yaml for agents map override + model_preset
+  // Attempt to load oma-config.cue (first) or oma-config.yaml for agents map override + model_preset
+  const cuePath = findConfigFileUp(cwd, path.join(".agents", "oma-config.cue"));
   const configPath = findConfigFileUp(
     cwd,
     path.join(".agents", "oma-config.yaml"),
@@ -104,7 +108,24 @@ export function resolveVendor(
   let parsedConfig: OmaConfig | null = null;
   let agentsOverride: Partial<Record<AgentId, AgentSpec>> | undefined;
   let defaultCli: string | undefined;
-  if (configPath) {
+
+  if (cuePath) {
+    const cueResult = evaluateCueFile(cuePath);
+    if (
+      cueResult.success &&
+      cueResult.data &&
+      typeof cueResult.data === "object"
+    ) {
+      const parsed = OmaConfigSchema.safeParse(cueResult.data);
+      if (parsed.success) {
+        parsedConfig = parsed.data as OmaConfig;
+        agentsOverride = parsedConfig?.agents;
+        defaultCli = parsedConfig?.default_cli;
+      }
+    }
+  }
+
+  if (!parsedConfig && configPath) {
     try {
       const raw = fs.readFileSync(configPath, "utf-8");
       parsedConfig = parseOmaConfig(raw, configPath);
@@ -148,7 +169,12 @@ export function resolveVendor(
   // cli-config.yaml's `active_vendor` is no longer a tier (design 024 §4.6):
   // it lived in a file `oma update` overwrites, and migration 022 maps it to
   // oma-config's `default_cli`. The `vendors:` half of that file still loads.
-  const vendor = vendorOverride || mappedVendor || defaultCli || "claude";
+  const vendor =
+    vendorOverride ||
+    mappedVendor ||
+    (parsedConfig?.model_preset === "auto"
+      ? resolveAutoVendor(defaultCli)
+      : defaultCli || "claude");
 
   return { vendor: vendor.toLowerCase(), config: cliConfig };
 }

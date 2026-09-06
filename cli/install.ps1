@@ -119,6 +119,25 @@ if (-not $serenaSetupReady) {
   Write-Warn "Continuing without Serena; install it later to enable code intelligence."
 }
 
+# ── cue (for typed oma-config.cue) ──────────────────────────────────
+if (Test-Command cue) {
+  Write-Ok "cue found"
+} else {
+  Write-Info "Installing cue via winget..."
+  $cueInstalled = $false
+  if (Test-Command winget) {
+    & winget install -e --id cue-lang.cue --accept-source-agreements --accept-package-agreements
+    if ($LASTEXITCODE -eq 0) {
+      Write-Ok "cue installed via winget"
+      $cueInstalled = $true
+    } else {
+      Write-Warn "winget install cue-lang.cue failed"
+    }
+  } else {
+    Write-Warn "winget not found. Please install cue via 'winget install cue-lang.cue' or see https://cuelang.org/docs/install/"
+  }
+}
+
 Write-Host ""
 Write-Ok "Core dependencies ready"
 Write-Host ""

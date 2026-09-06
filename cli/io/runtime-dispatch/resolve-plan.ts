@@ -18,6 +18,7 @@ import {
 } from "../../platform/model-registry.js";
 import { ConfigError } from "./config-error.js";
 import { loadUserConfig } from "./config-loader.js";
+import { resolveAutoVendor } from "./detect.js";
 import { toPiModel } from "./pi-model-map.js";
 import type { AgentPlan } from "./types.js";
 
@@ -92,6 +93,7 @@ export function resolveAgentPlanFromConfig(
   agentId: string,
   config: Partial<OmaConfig>,
   vendorOverride?: string,
+  env: NodeJS.ProcessEnv = process.env,
 ): AgentPlan {
   const modelPreset = config.model_preset;
   if (!modelPreset) {
@@ -106,7 +108,12 @@ export function resolveAgentPlanFromConfig(
   const customPreset = config.custom_presets?.[resolvedKey];
 
   let preset: ModelPreset;
-  if (builtIn) {
+  if (modelPreset === "auto") {
+    preset = {
+      description: "Use the current vendor's agent configuration",
+      agent_defaults: {},
+    };
+  } else if (builtIn) {
     if (resolvedKey !== modelPreset) {
       console.warn(
         `[resolve-agent-plan] Preset alias "${modelPreset}" redirected to "${resolvedKey}". Update your config to use the canonical key.`,
@@ -126,7 +133,7 @@ export function resolveAgentPlanFromConfig(
     }
     // Custom preset collision with built-in name was already resolved above (builtIn wins)
   } else {
-    const validBuiltIns = Object.keys(BUILT_IN_PRESETS).join(", ");
+    const validBuiltIns = ["auto", ...Object.keys(BUILT_IN_PRESETS)].join(", ");
     throw new ConfigError(
       `Unknown model_preset "${modelPreset}". Built-in presets: ${validBuiltIns}. ` +
         `Custom presets defined: ${Object.keys(config.custom_presets ?? {}).join(", ") || "(none)"}.`,
@@ -139,18 +146,19 @@ export function resolveAgentPlanFromConfig(
   const typedAgentId = (normalizeAgentId(agentId) ?? agentId) as AgentId;
   const presetSpec =
     preset.agent_defaults[typedAgentId] ?? preset.agent_defaults.orchestrator;
+  const override = config.agents?.[typedAgentId];
 
-  if (!presetSpec) {
+  if (modelPreset === "auto" && !override) {
+    return { cli: resolveAutoVendor(config.default_cli, vendorOverride, env) };
+  }
+
+  const spec = override ? { ...presetSpec, ...override } : presetSpec;
+  if (!spec || (!presetSpec && modelPreset !== "auto")) {
     throw new ConfigError(
       `Preset "${resolvedKey}" has no agent_defaults for "${agentId}" and no orchestrator fallback. ` +
         `Custom presets without 'extends' must define every canonical agent role.`,
     );
   }
-
-  const override = config.agents?.[typedAgentId];
-  const spec: AgentSpec = override
-    ? { ...presetSpec, ...override }
-    : presetSpec;
 
   if (override && JSON.stringify(override) === JSON.stringify(presetSpec)) {
     console.debug(
@@ -176,7 +184,7 @@ export function resolveAgentPlanFromConfig(
 
   // Step 4: Feature filter + vendorOverride
   const effectiveOverride =
-    vendorOverride ?? process.env.OMA_RUNTIME_VENDOR?.trim().toLowerCase();
+    vendorOverride ?? env.OMA_RUNTIME_VENDOR?.trim().toLowerCase();
 
   let cli: RuntimeId = modelSpec.cli;
   // pi-specific cli_model override: pi addresses models by their `provider/id`
@@ -247,8 +255,9 @@ export function resolveAgentPlanFromConfig(
 export function resolveAgentPlan(
   agentId: string,
   vendorOverride?: string,
+  env: NodeJS.ProcessEnv = process.env,
 ): AgentPlan {
   const cwd = process.cwd();
   const config = loadUserConfig(cwd);
-  return resolveAgentPlanFromConfig(agentId, config, vendorOverride);
+  return resolveAgentPlanFromConfig(agentId, config, vendorOverride, env);
 }

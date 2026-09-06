@@ -233,6 +233,25 @@ describe("the installed hook, enforced by git", () => {
     expect(status).toBe(0);
   });
 
+  it("accepts the address configured in oma-config.cue", () => {
+    const repo = makeRepo();
+    const agentsDir = join(repo, ".agents");
+    mkdirSync(agentsDir, { recursive: true });
+    writeFileSync(
+      join(agentsDir, "oma-config.cue"),
+      `package config\nscm: co_author: {\n  enabled: true\n  email: "cue-bot@example.com"\n  enforce_hook: true\n}\n`,
+    );
+    ensureCoAuthorGuardHook(repo);
+
+    const { status } = tryCommit(
+      repo,
+      "c.txt",
+      "feat: thing\n\nCo-Authored-By: Bot <cue-bot@example.com>",
+    );
+
+    expect(status).toBe(0);
+  });
+
   it("accepts an address listed in the allowlist", () => {
     const repo = makeRepo();
     writeConfig(repo, { enabled: true, email: "bot@example.com" });

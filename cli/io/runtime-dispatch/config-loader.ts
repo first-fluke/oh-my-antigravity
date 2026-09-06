@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { OmaConfig } from "../../platform/agent-config.js";
+import { evaluateCueFile } from "../../utils/cue.js";
 import { findFileUpwards } from "../../utils/fs-utils.js";
 import { ConfigError } from "./config-error.js";
 
@@ -51,9 +52,8 @@ function assertNotLegacyPreset(modelPreset: string, filePath: string): void {
 }
 
 /**
- * Load user config from the canonical .agents/oma-config.yaml.
+ * Load user config from .agents/oma-config.cue (first) or .agents/oma-config.yaml.
  * Returns partial OmaConfig shape — only fields present in the file are set.
- * Migration 003 ensures oma-config.yaml is the only user config file.
  *
  * Throws ConfigError with file:line:col when the file exists but contains
  * invalid YAML, so the user gets an actionable error message.
@@ -61,14 +61,56 @@ function assertNotLegacyPreset(modelPreset: string, filePath: string): void {
  * to prompt the user to run `oma update`.
  */
 export function loadUserConfig(cwd: string): Partial<OmaConfig> {
-  const canonicalPath = findFileUpwards(
+  const cuePath = findFileUpwards(cwd, path.join(".agents", "oma-config.cue"));
+  const yamlPath = findFileUpwards(
     cwd,
     path.join(".agents", "oma-config.yaml"),
   );
-  if (!canonicalPath) return {};
+
+  if (cuePath) {
+    const result = evaluateCueFile(cuePath);
+    if (result.success) {
+      if (
+        result.data &&
+        typeof result.data === "object" &&
+        !Array.isArray(result.data)
+      ) {
+        const config = result.data as Partial<OmaConfig>;
+        if (typeof config.model_preset === "string") {
+          assertNotLegacyPreset(config.model_preset, cuePath);
+        }
+        return config;
+      }
+      return {};
+    }
+
+    if (yamlPath) {
+      if (result.missingCli) {
+        console.warn(
+          `[runtime-dispatch] Found ${cuePath} but 'cue' CLI is not installed in PATH. Falling back to ${yamlPath}.`,
+        );
+      } else {
+        console.warn(
+          `[runtime-dispatch] Failed to evaluate CUE at ${cuePath}: ${result.error}. Falling back to ${yamlPath}.`,
+        );
+      }
+    } else {
+      if (result.missingCli) {
+        throw new ConfigError(
+          `Found ${cuePath} but 'cue' CLI is not installed or not in PATH.\n` +
+            `  Install CUE from https://cuelang.org/docs/install/ or create .agents/oma-config.yaml instead.`,
+        );
+      }
+      throw new ConfigError(
+        `Failed to evaluate CUE at ${cuePath}: ${result.error}`,
+      );
+    }
+  }
+
+  if (!yamlPath) return {};
   let content: string;
   try {
-    content = fs.readFileSync(canonicalPath, "utf-8");
+    content = fs.readFileSync(yamlPath, "utf-8");
   } catch {
     return {};
   }
@@ -78,7 +120,7 @@ export function loadUserConfig(cwd: string): Partial<OmaConfig> {
       const config = parsed as Partial<OmaConfig>;
       // Hard-error on legacy preset names before returning config
       if (typeof config.model_preset === "string") {
-        assertNotLegacyPreset(config.model_preset, canonicalPath);
+        assertNotLegacyPreset(config.model_preset, yamlPath);
       }
       return config;
     }
@@ -95,9 +137,7 @@ export function loadUserConfig(cwd: string): Partial<OmaConfig> {
         .length > 0
         ? (err as { linePos: Array<{ line: number; col: number }> }).linePos[0]
         : null;
-    const location = pos
-      ? `${canonicalPath}:${pos.line}:${pos.col}`
-      : canonicalPath;
+    const location = pos ? `${yamlPath}:${pos.line}:${pos.col}` : yamlPath;
     throw new ConfigError(
       `Failed to parse YAML at ${location}: ${err instanceof Error ? err.message : String(err)}`,
     );

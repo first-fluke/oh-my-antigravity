@@ -4,7 +4,7 @@ import type { ProviderInstallOptions } from "./provider-preferences.js";
 export type InstallOptions = ProviderInstallOptions & {
   /**
    * Non-interactive mode. Skips every prompt and falls back to safe
-   * defaults (language=existing|en, model_preset=existing|claude,
+   * defaults (language=existing|en, model_preset=existing|auto,
    * project_type=all, vendors=all non-HOME-base). HOME-base vendor consent
    * stays opt-in (skipped), competitor uninstall is skipped, GitHub star
    * prompt is skipped.

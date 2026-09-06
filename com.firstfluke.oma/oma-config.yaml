@@ -67,15 +67,19 @@ telemetry: false
 # 2. Model selection
 # ─────────────────────────────────────────────────────────────────────────────
 #
-# Resolution order when an agent runs:
+# With auto, explicit agents overrides win; otherwise the runtime selects the
+# vendor and its native settings select the model. Unknown runtimes use default_cli.
+# Resolution order with a fixed preset:
 #   1. agents.<id>            — explicit per-agent override
 #   2. model_preset entry     — built-in or custom_presets[model_preset]
 #   3. preset.orchestrator    — fallback when an agent is missing from the preset
 #   4. default_cli            — vendor-only fallback when none of the above resolve
 
-# Built-in: antigravity | claude | codex | qwen | cursor | mixed
+# auto follows the current runtime's agent/model settings without pinning a model.
+# Explicit agents overrides still win; unknown runtimes use default_cli.
+# Fixed presets: antigravity | claude | codex | qwen | cursor | kiro | mixed
 # (custom_presets entries are also valid)
-model_preset: antigravity
+model_preset: auto
 
 # Fallback CLI vendor for `oma agent spawn`, used only when steps 1-3 above
 # resolve nothing. This is the only place it can be set — cli-config.yaml's

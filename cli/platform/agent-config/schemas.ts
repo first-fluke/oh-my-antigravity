@@ -62,6 +62,8 @@ const AgentsMapSchema = z
     mobile: AgentSpecSchema.optional(),
     db: AgentSpecSchema.optional(),
     debug: AgentSpecSchema.optional(),
+    refactor: AgentSpecSchema.optional(),
+    docs: AgentSpecSchema.optional(),
     "tf-infra": AgentSpecSchema.optional(),
     explore: AgentSpecSchema.optional(),
     eval: AgentSpecSchema.optional(),

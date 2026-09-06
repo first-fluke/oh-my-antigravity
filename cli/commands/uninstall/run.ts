@@ -24,6 +24,7 @@ export type RemovalEntry = {
  * Files that are user-owned and must never be deleted.
  * Returned in the "preserved" section of the preview.
  */
+const OMA_CONFIG_CUE = "oma-config.cue";
 const OMA_CONFIG_YAML = "oma-config.yaml";
 const MCP_JSON = "mcp.json";
 const OMA_GENERATED_MARKER = "<!-- oma:generated -->";
@@ -218,6 +219,15 @@ export function buildRemovalPlan(installRoot: string): {
   // No separate archive needed.
 
   // ── User-owned SSOT files (preserved) ────────────────────────────────────
+
+  const omaConfigCuePath = path.join(installRoot, ".agents", OMA_CONFIG_CUE);
+  if (detectKind(omaConfigCuePath) !== null) {
+    userOwned.push({
+      path: omaConfigCuePath,
+      kind: "file",
+      reason: "user preferences",
+    });
+  }
 
   const omaConfigPath = path.join(installRoot, ".agents", OMA_CONFIG_YAML);
   if (detectKind(omaConfigPath) !== null) {

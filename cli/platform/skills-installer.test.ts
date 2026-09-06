@@ -227,9 +227,12 @@ describe("skills.ts - Workflow and Config Installation", () => {
     it("creates oma-config.yaml on fresh install when missing", () => {
       const omaConfigSrc = join(mockSourceDir, ".agents", "oma-config.yaml");
       const omaConfigDest = join(mockTargetDir, ".agents", "oma-config.yaml");
+      const omaConfigCueSrc = join(mockSourceDir, ".agents", "oma-config.cue");
+      const omaConfigCueDest = join(mockTargetDir, ".agents", "oma-config.cue");
 
       (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
         (p: string) => {
+          if (p === omaConfigCueSrc || p === omaConfigCueDest) return false;
           if (p === omaConfigSrc) return true;
           if (p === omaConfigDest) return false; // missing on target
           return true;
@@ -242,6 +245,28 @@ describe("skills.ts - Workflow and Config Installation", () => {
       installConfigs(mockSourceDir, mockTargetDir, false);
 
       expect(fs.cpSync).toHaveBeenCalledWith(omaConfigSrc, omaConfigDest);
+    });
+
+    it("creates oma-config.cue on fresh install when source has oma-config.cue", () => {
+      const omaConfigCueSrc = join(mockSourceDir, ".agents", "oma-config.cue");
+      const omaConfigCueDest = join(mockTargetDir, ".agents", "oma-config.cue");
+
+      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (p: string) => {
+          if (p === omaConfigCueSrc) return true;
+          if (p === omaConfigCueDest) return false;
+          if (p === join(mockTargetDir, ".agents", "oma-config.yaml"))
+            return false;
+          return true;
+        },
+      );
+      (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        [],
+      );
+
+      installConfigs(mockSourceDir, mockTargetDir, false);
+
+      expect(fs.cpSync).toHaveBeenCalledWith(omaConfigCueSrc, omaConfigCueDest);
     });
 
     it("preserves existing oma-config.yaml without force", () => {
@@ -261,8 +286,12 @@ describe("skills.ts - Workflow and Config Installation", () => {
     });
 
     it("overwrites oma-config.yaml with force flag", () => {
-      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-        true,
+      const omaConfigCueSrc = join(mockSourceDir, ".agents", "oma-config.cue");
+      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (p: string) => {
+          if (p === omaConfigCueSrc) return false;
+          return true;
+        },
       );
 
       installConfigs(mockSourceDir, mockTargetDir, true);

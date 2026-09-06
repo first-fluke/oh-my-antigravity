@@ -1,8 +1,4 @@
-import type {
-  EffortLevel,
-  ModelSpec,
-  RuntimeId,
-} from "../../platform/model-registry.js";
+import type { EffortLevel, ModelSpec } from "../../platform/model-registry.js";
 import type { VendorType } from "../../types/vendors.js";
 
 /**
@@ -34,10 +30,11 @@ export type DispatchPlan = {
 };
 
 export type AgentPlan = {
-  cli: RuntimeId;
-  cliModel: string;
+  cli: Exclude<RuntimeVendor, "unknown">;
+  /** Absent in auto mode: the vendor's agent/session configuration selects the model. */
+  cliModel?: string;
   effort?: EffortLevel;
   thinking?: boolean;
   memory?: "user" | "project" | "local";
-  spec: ModelSpec;
+  spec?: ModelSpec;
 };

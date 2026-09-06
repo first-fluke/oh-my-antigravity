@@ -160,6 +160,23 @@ describe("buildRemovalPlan", () => {
     expect(omaOwned.map((e) => e.path)).not.toContain(myCustomPath);
   });
 
+  it("oma-config.cue is preserved in userOwned and NOT in omaOwned", () => {
+    const root = makeTmpDir();
+    setInstallContext({ installRoot: root, mode: "project" });
+    seedOmaLayout(root);
+    fs.writeFileSync(
+      path.join(root, ".agents", "oma-config.cue"),
+      "package config\n",
+      "utf-8",
+    );
+
+    const { omaOwned, userOwned } = buildRemovalPlan(root);
+
+    const cuePath = path.join(root, ".agents", "oma-config.cue");
+    expect(userOwned.map((e) => e.path)).toContain(cuePath);
+    expect(omaOwned.map((e) => e.path)).not.toContain(cuePath);
+  });
+
   it("oma-config.yaml is always in userOwned", () => {
     const root = makeTmpDir();
     setInstallContext({ installRoot: root, mode: "project" });

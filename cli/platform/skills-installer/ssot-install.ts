@@ -143,16 +143,31 @@ export function installConfigs(
     }
   }
 
-  // Bootstrap oma-config.yaml on fresh installs so language/model_preset/
-  // vendors patches downstream have a file to operate on. User edits are
-  // preserved unless `force` is true.
-  const omaConfigSrc = join(sourceDir, ".agents", "oma-config.yaml");
-  if (fs.existsSync(omaConfigSrc)) {
-    const agentDir = join(installRoot, ".agents");
-    fs.mkdirSync(agentDir, { recursive: true });
-    const omaConfigDest = join(agentDir, "oma-config.yaml");
-    if (force || !fs.existsSync(omaConfigDest)) {
-      fs.cpSync(omaConfigSrc, omaConfigDest);
+  // Bootstrap user config on fresh installs.
+  // Prefer oma-config.cue when shipped, falling back to oma-config.yaml.
+  // User edits are preserved unless `force` is true.
+  const omaConfigCueSrc = join(sourceDir, ".agents", "oma-config.cue");
+  const omaConfigYamlSrc = join(sourceDir, ".agents", "oma-config.yaml");
+  const agentDir = join(installRoot, ".agents");
+  fs.mkdirSync(agentDir, { recursive: true });
+
+  const omaConfigCueDest = join(agentDir, "oma-config.cue");
+  const omaConfigYamlDest = join(agentDir, "oma-config.yaml");
+
+  const srcPath = fs.existsSync(omaConfigCueSrc)
+    ? omaConfigCueSrc
+    : fs.existsSync(omaConfigYamlSrc)
+      ? omaConfigYamlSrc
+      : null;
+
+  if (srcPath) {
+    const isCue = srcPath.endsWith(".cue");
+    const destPath = isCue ? omaConfigCueDest : omaConfigYamlDest;
+    if (
+      force ||
+      (!fs.existsSync(omaConfigCueDest) && !fs.existsSync(omaConfigYamlDest))
+    ) {
+      fs.cpSync(srcPath, destPath);
     }
   }
 }

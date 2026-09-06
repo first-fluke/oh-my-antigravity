@@ -17,6 +17,7 @@ import type {
   MemoryGcResult,
   MemoryGcScope,
 } from "../../types/memory.js";
+import { evaluateCueFile } from "../../utils/cue.js";
 import { findFileUpwards, resolveProjectRoot } from "../../utils/fs-utils.js";
 
 const SESSIONS_REL = join(".agents", "state", "sessions");
@@ -65,6 +66,7 @@ export function loadMemoryGcConfig(
   cwd: string = process.cwd(),
 ): MemoryGcConfig {
   const candidates = [
+    findFileUpwards(cwd, join(".agents", "oma-config.cue")),
     findFileUpwards(cwd, join(".agents", "oma-config.yaml")),
     findFileUpwards(cwd, join(".agents", "config", "defaults.yaml")),
   ];
@@ -72,11 +74,23 @@ export function loadMemoryGcConfig(
     if (!candidate) continue;
     let raw: RawGcConfig | undefined;
     try {
-      const parsed = parseYaml(readFileSync(candidate, "utf-8")) as
-        | RawConfigFile
-        | null
-        | undefined;
-      raw = parsed?.memory?.gc;
+      if (candidate.endsWith(".cue")) {
+        const result = evaluateCueFile(candidate);
+        if (
+          result.success &&
+          result.data &&
+          typeof result.data === "object" &&
+          !Array.isArray(result.data)
+        ) {
+          raw = (result.data as RawConfigFile).memory?.gc;
+        }
+      } else {
+        const parsed = parseYaml(readFileSync(candidate, "utf-8")) as
+          | RawConfigFile
+          | null
+          | undefined;
+        raw = parsed?.memory?.gc;
+      }
     } catch {
       raw = undefined;
     }

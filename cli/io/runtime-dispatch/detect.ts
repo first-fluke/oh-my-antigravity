@@ -1,3 +1,4 @@
+import { ConfigError } from "./config-error.js";
 import type { RuntimeVendor } from "./types.js";
 
 const SUPPORTED_RUNTIME_VENDORS = new Set<RuntimeVendor>([
@@ -74,4 +75,25 @@ export function detectRuntimeVendor(
   }
 
   return "unknown";
+}
+
+/** Select only the transport; auto never chooses a model preset. */
+export function resolveAutoVendor(
+  defaultCli?: string,
+  vendorOverride?: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Exclude<RuntimeVendor, "unknown"> {
+  const runtime = detectRuntimeVendor(env);
+  const vendor = (
+    vendorOverride ??
+    (runtime === "unknown" ? (defaultCli ?? "claude") : runtime)
+  )
+    .trim()
+    .toLowerCase();
+  if (!SUPPORTED_RUNTIME_VENDORS.has(vendor as RuntimeVendor)) {
+    throw new ConfigError(
+      `Unsupported auto dispatch vendor "${vendor}". Set default_cli to a supported CLI vendor.`,
+    );
+  }
+  return vendor as Exclude<RuntimeVendor, "unknown">;
 }

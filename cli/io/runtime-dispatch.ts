@@ -1,7 +1,10 @@
 import type { VendorConfig } from "../platform/agent-config.js";
 import { persistCodexEffortToToml } from "./runtime-dispatch/codex-effort.js";
 import { ConfigError } from "./runtime-dispatch/config-error.js";
-import { detectRuntimeVendor } from "./runtime-dispatch/detect.js";
+import {
+  detectRuntimeVendor,
+  resolveAutoVendor,
+} from "./runtime-dispatch/detect.js";
 import {
   buildExternalInvocation,
   type ExternalInvocationOptions,
@@ -98,7 +101,7 @@ function applyResolvedPlan(
   plan: AgentPlan | null,
   targetVendor: string,
 ): Invocation {
-  if (!plan) return invocation;
+  if (!plan?.cliModel) return invocation;
   if (targetVendor === "cursor") {
     return injectModelBeforeTrailingPrompt(
       invocation,
@@ -192,7 +195,11 @@ export function planDispatch(
     // env fallback inside resolveAgentPlan), avoiding any regression.
     const planOverride =
       targetVendor === "pi" || runtimeVendor === "pi" ? "pi" : undefined;
-    plan = resolveAgentPlan(agentId, planOverride);
+    plan = resolveAgentPlan(agentId, planOverride, env);
+    // An inherited plan follows the already resolved dispatch target, including
+    // an explicit --vendor choice. It never injects an OMA default model.
+    if (!plan.cliModel)
+      plan = { ...plan, cli: resolveAutoVendor(undefined, targetVendor, env) };
   } catch (err) {
     if (err instanceof ConfigError) {
       console.warn(

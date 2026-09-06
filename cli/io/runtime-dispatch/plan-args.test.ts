@@ -17,7 +17,7 @@ function agyPlan(
   cliModel: string,
   levels: EffortLevel[],
   effort?: EffortLevel,
-): AgentPlan {
+): AgentPlan & { cliModel: string } {
   const spec = {
     cli: "antigravity",
     cli_model: cliModel,

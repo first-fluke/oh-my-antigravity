@@ -7,6 +7,7 @@ import {
   serializeFrontmatter,
 } from "../utils/frontmatter.js";
 import { atomicWriteFileSync } from "../utils/safe-write.js";
+import { normalizeAgentId, type OmaConfig } from "./agent-config.js";
 import type { Difficulty } from "./context-loader.js";
 import { assertContainedRelPath } from "./path-containment.js";
 import { safeLoadVariant } from "./variant-loader.js";
@@ -460,16 +461,44 @@ export function installVendorAgents(
   const destDir = join(targetDir, variant.destDir);
   mkdirSync(destDir, { recursive: true });
 
+  // Installed project preferences take precedence over the distribution's
+  // template. Keep variant defaults unless auto has an explicit agent override.
+  let userConfig: Partial<OmaConfig> = {};
+  try {
+    userConfig = loadUserConfig(targetDir);
+    if (!userConfig.model_preset) userConfig = loadUserConfig(sourceDir);
+  } catch {
+    // Invalid config is reported by dispatch/doctor; retain native defaults here.
+  }
+
   let written = 0;
   for (const definition of readAbstractAgentDefinitions(sourceDir)) {
     const config: AgentConfig = {
       ...(variant.agents[definition.agentKey] || {}),
     };
 
+    const agentId = normalizeAgentId(definition.agentKey);
+    if (
+      userConfig.model_preset === "auto" &&
+      agentId &&
+      userConfig.agents?.[agentId]
+    ) {
+      const plan = resolveAgentPlanFromConfig(
+        agentId,
+        userConfig,
+        undefined,
+        {},
+      );
+      if (plan.cli === vendor && plan.cliModel) {
+        config.model = plan.cliModel;
+        if (plan.effort) config.effort = plan.effort;
+      }
+    }
+
     // #583-2: pin the OpenCode-routed model/variant so native task-dispatched
     // subagents stop inheriting the primary agent's model. An explicit variant
     // override (config.model / config.effort) still wins.
-    if (vendor === "opencode") {
+    if (vendor === "opencode" && userConfig.model_preset !== "auto") {
       const resolved = resolveOpencodeAgentModel(
         sourceDir,
         definition.agentKey,

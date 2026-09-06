@@ -641,10 +641,10 @@ describe("AgentPlan.spec — downstream reference", () => {
   it("includes the full ModelSpec for downstream consumers", () => {
     const plan = resolveAgentPlanFromConfig("backend", CODEX_ONLY_CONFIG);
     expect(plan.spec).toBeDefined();
-    expect(plan.spec.cli).toBe("codex");
-    expect(plan.spec.cli_model).toBe("gpt-5.5");
-    expect(plan.spec.supports.effort?.type).toBe("granular");
-    expect(plan.spec.supports.apply_patch).toBe(true);
+    expect(plan.spec?.cli).toBe("codex");
+    expect(plan.spec?.cli_model).toBe("gpt-5.5");
+    expect(plan.spec?.supports.effort?.type).toBe("granular");
+    expect(plan.spec?.supports.apply_patch).toBe(true);
   });
 });
 

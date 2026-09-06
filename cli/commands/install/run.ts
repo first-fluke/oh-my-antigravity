@@ -41,6 +41,7 @@ import {
   isTelemetryEnabled,
   loadDevToolsBrowsers,
 } from "../../utils/config.js";
+import { ensureCueBinary } from "../../utils/cue.js";
 import {
   acquireLock,
   bindInstallLockRelease,
@@ -520,6 +521,20 @@ export async function install(options: InstallOptions = {}): Promise<void> {
         } else if (serenaBinary.status === "uv-missing") {
           p.log.warn(
             `serena not found and uv is unavailable — install uv, then run \`${SERENA_INSTALL_HINT}\`.`,
+          );
+        }
+
+        const cueBinary = ensureCueBinary({
+          onInstallStart: () =>
+            p.log.info(
+              "Checking/installing CUE binary for typed configuration…",
+            ),
+        });
+        if (cueBinary.status === "installed") {
+          p.log.success(pc.green("Installed CUE binary"));
+        } else if (cueBinary.status === "install-failed") {
+          p.log.warn(
+            `CUE binary not found — install via 'brew install cue' (macOS) or see https://cuelang.org/docs/install/`,
           );
         }
         const contexts = ensureOmaSerenaContexts();

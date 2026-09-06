@@ -5,9 +5,8 @@
 // builds an auth-status matrix for every role-model pairing, calls
 // detectDeprecatedOAuthSession() for Qwen, and emits Antigravity warning.
 
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, parse as parsePath, resolve } from "node:path";
-import { parse as parseYaml } from "yaml";
+import { loadUserConfig } from "../../io/runtime-dispatch/config-loader.js";
+import { resolveAutoVendor } from "../../io/runtime-dispatch/detect.js";
 import { detectRuntimeVendor } from "../../io/runtime-dispatch.js";
 import type {
   AgentId,
@@ -111,39 +110,12 @@ function checkAuthStatus(cli: string, spec: ModelSpec | undefined): AuthStatus {
 // oma-config.yaml loader
 // ---------------------------------------------------------------------------
 
-/**
- * Walk from `startDir` up to the filesystem root looking for `relativePath`.
- * Mirrors findFileUp in cli/io/runtime-dispatch.ts so the doctor matrix finds
- * the same config files the spawn path would when invoked from a subdirectory.
- */
-function findFileUp(startDir: string, relativePath: string): string | null {
-  let current = resolve(startDir);
-  const root = parsePath(current).root;
-  while (current !== root) {
-    const candidate = join(current, relativePath);
-    if (existsSync(candidate)) return candidate;
-    current = dirname(current);
-  }
-  return null;
-}
-
 function loadOmaConfig(cwd: string): Partial<OmaConfig> | null {
-  const configPath = findFileUp(cwd, join(".agents", "oma-config.yaml"));
-  if (!configPath) return null;
   try {
-    const content = readFileSync(configPath, "utf-8");
-    const parsed = parseYaml(content) as unknown;
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      !Array.isArray(parsed)
-    ) {
-      return parsed as Partial<OmaConfig>;
-    }
+    return loadUserConfig(cwd);
   } catch {
-    // ignore malformed YAML
+    return null;
   }
-  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,6 +127,12 @@ function resolvePreset(
 ): { preset: ModelPreset; resolvedKey: string } | null {
   const modelPreset = config.model_preset;
   if (!modelPreset) return null;
+  if (modelPreset === "auto") {
+    return {
+      preset: { description: "Vendor agent defaults", agent_defaults: {} },
+      resolvedKey: "auto",
+    };
+  }
 
   const resolvedKey = BUILT_IN_PRESET_ALIASES[modelPreset] ?? modelPreset;
   const builtIn =
@@ -207,7 +185,7 @@ function cliFromModelSpec(spec: ModelSpec | undefined, slug: string): string {
 // Public types
 // ---------------------------------------------------------------------------
 
-export type RowSource = "preset" | "override";
+export type RowSource = "preset" | "override" | "vendor";
 
 export interface ProfileRow {
   role: string;
@@ -267,6 +245,16 @@ export async function collectProfileReport(
 
     const typedRole = role as AgentId;
     const override = agentsOverride[typedRole];
+    if (profileName === "auto" && !override) {
+      const cli = resolveAutoVendor(config?.default_cli);
+      return {
+        role,
+        model: "(vendor agent default)",
+        cli,
+        authStatus: checkAuthStatus(cli, undefined),
+        source: "vendor",
+      };
+    }
     const presetSpec = resolved.preset.agent_defaults[typedRole] as
       | AgentSpec
       | undefined;

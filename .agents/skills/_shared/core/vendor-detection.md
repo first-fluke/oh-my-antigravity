@@ -1,7 +1,7 @@
 # Vendor Detection Protocol
 
 When executing a workflow, determine your runtime environment using this priority order.
-Then resolve the target vendor for each agent from `.agents/oma-config.yaml`: the `model_preset` entry plus per-agent `agents:` overrides resolve each agent to a model slug (`<owner>/<slug>`), and the model's owning vendor is that agent's target vendor. See `web/docs/guide/per-agent-models.md` for the resolution order. (The legacy `agent_cli_mapping` / `default_cli` keys were replaced by `model_preset` in migration 008; only pre-migration configs still carry them.)
+Then resolve the target vendor for each agent from `.agents/oma-config.cue` or `.agents/oma-config.yaml`. Explicit `agents:` model overrides take priority. With `model_preset: auto` (the default for new installs), unconfigured agents follow the current runtime's native agent definitions and model settings; do not substitute a fixed vendor preset or inject a model/effort override. When the runtime cannot be detected, use `default_cli` (or `claude` when omitted). Fixed built-in and custom presets continue to resolve model slugs (`<owner>/<slug>`) to their owning vendors. See `web/docs/guide/per-agent-models.md` for details.
 
 Important:
 - Do **not** choose one spawn strategy for the entire workflow based only on the main runtime vendor.

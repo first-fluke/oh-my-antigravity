@@ -76,10 +76,13 @@ vi.mock("../../io/runtime-dispatch.js", () => ({
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
+  const existsSync = vi.fn((path) => String(path).endsWith("oma-config.yaml"));
+  const readFileSync = vi.fn(() => DEFAULT_DEFAULTS_YAML);
   return {
     ...actual,
-    existsSync: vi.fn(() => true),
-    readFileSync: vi.fn(() => DEFAULT_DEFAULTS_YAML),
+    existsSync,
+    readFileSync,
+    default: { ...actual, existsSync, readFileSync },
   };
 });
 
@@ -119,7 +122,9 @@ beforeEach(() => {
     migrationNeeded: false,
   });
   vi.mocked(runtimeDispatchMock.detectRuntimeVendor).mockReturnValue("claude");
-  vi.mocked(fsMock.existsSync).mockReturnValue(true);
+  vi.mocked(fsMock.existsSync).mockImplementation((path) =>
+    String(path).endsWith("oma-config.yaml"),
+  );
   vi.mocked(fsMock.readFileSync).mockReturnValue(DEFAULT_DEFAULTS_YAML);
 });
 

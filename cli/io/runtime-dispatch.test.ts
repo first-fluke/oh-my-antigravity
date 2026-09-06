@@ -137,6 +137,13 @@ describe("planDispatch — forced-external runtimes", () => {
   });
 
   it("antigravity native dispatch appends --model when the installed agy supports it (1.1+)", () => {
+    const root = mkdtempSync(join(tmpdir(), "oma-fixed-agy-"));
+    mkdirSync(join(root, ".agents"));
+    writeFileSync(
+      join(root, ".agents", "oma-config.yaml"),
+      "model_preset: antigravity\n",
+    );
+    const cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(root);
     primeAgyCaps({ modelFlag: true, addDir: true });
     const plan = planDispatch(
       "test-agent",
@@ -147,8 +154,10 @@ describe("planDispatch — forced-external runtimes", () => {
       { OMA_RUNTIME_VENDOR: "antigravity" },
     );
     resetAgyCapsCache();
+    cwdSpy.mockRestore();
+    rmSync(root, { recursive: true, force: true });
     expect(plan.mode).toBe("native");
-    // Per-agent plan resolution (repo config → antigravity preset) supplies the
+    // Per-agent plan resolution (fixture → antigravity preset) supplies the
     // model id; with caps present it must be forwarded as `--model <id>`.
     expect(plan.invocation.args).toContain("--model");
   });

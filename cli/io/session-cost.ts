@@ -18,6 +18,7 @@
 import fs, { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
+import { evaluateCueFile } from "../utils/cue.js";
 import { findFileUpwards } from "../utils/fs-utils.js";
 import {
   createMarkdownRecordStore,
@@ -97,6 +98,18 @@ type RawConfigFile = {
 
 function loadRawConfig(filePath: string): RawConfigFile {
   try {
+    if (filePath.endsWith(".cue")) {
+      const result = evaluateCueFile(filePath);
+      if (
+        result.success &&
+        result.data &&
+        typeof result.data === "object" &&
+        !Array.isArray(result.data)
+      ) {
+        return result.data as RawConfigFile;
+      }
+      return {};
+    }
     const content = fs.readFileSync(filePath, "utf-8");
     const parsed = parseYaml(content);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
@@ -122,13 +135,15 @@ function normalizeQuotaCap(raw: RawQuotaCap): QuotaCap {
  * Load quota cap from config files.
  *
  * Precedence (first match wins):
- *   1. .agents/oma-config.yaml                — canonical user config
- *   2. .agents/config/defaults.yaml           — OMA-shipped SSOT fallback
+ *   1. .agents/oma-config.cue                — CUE user config (highest priority)
+ *   2. .agents/oma-config.yaml               — canonical YAML user config
+ *   3. .agents/config/defaults.yaml          — OMA-shipped SSOT fallback
  *
  * Returns null if no cap is configured.
  */
 export function loadQuotaCap(cwd: string = process.cwd()): QuotaCap | null {
   const candidates = [
+    findFileUpwards(cwd, path.join(".agents", "oma-config.cue")),
     findFileUpwards(cwd, path.join(".agents", "oma-config.yaml")),
     findFileUpwards(cwd, path.join(".agents", "config", "defaults.yaml")),
   ];

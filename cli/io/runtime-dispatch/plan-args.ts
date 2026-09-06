@@ -9,7 +9,7 @@ import type { AgentPlan } from "./types.js";
  * thinking:boolean override applied first.
  */
 export function qwenThinkingFlag(plan: AgentPlan): string | null {
-  const effortSpec = plan.spec.supports.effort;
+  const effortSpec = plan.spec?.supports.effort;
   if (effortSpec?.type !== "binary-thinking") return null;
 
   // Explicit thinking boolean takes priority
@@ -38,8 +38,10 @@ const AGY_EFFORT_TIER: Record<string, string> = {
  * unknown tier makes agy exit with `Error: invalid --model` instead of falling
  * back. Anything unmapped keeps the registry default.
  */
-export function agyModelForEffort(plan: AgentPlan): string {
-  const effortSpec = plan.spec.supports.effort;
+export function agyModelForEffort(
+  plan: AgentPlan & { cliModel: string },
+): string {
+  const effortSpec = plan.spec?.supports.effort;
   if (!plan.effort || effortSpec?.type !== "granular") return plan.cliModel;
 
   // Match on the resolved tier, not the raw effort: `xhigh` has no agy tier of
@@ -69,6 +71,7 @@ export function agyModelForEffort(plan: AgentPlan): string {
  *                agyModelForEffort.
  */
 export function buildAgentPlanArgs(plan: AgentPlan): string[] {
+  if (!plan.cliModel) return [];
   const args: string[] = [];
 
   switch (plan.cli) {
@@ -98,7 +101,10 @@ export function buildAgentPlanArgs(plan: AgentPlan): string[] {
       // agy 1.0 exposed no model flag; 1.1+ added `--model`. Probe the
       // installed binary once and pass the per-agent model only when supported.
       if (detectAgyCaps().modelFlag) {
-        args.push("--model", agyModelForEffort(plan));
+        args.push(
+          "--model",
+          agyModelForEffort({ ...plan, cliModel: plan.cliModel }),
+        );
       }
       break;
     }

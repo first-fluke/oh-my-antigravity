@@ -23,7 +23,7 @@ export async function renderProfileReport(
       [
         pc.red("model_preset not found or unknown in .agents/oma-config.yaml"),
         pc.dim("Run `oma install` to set a model preset."),
-        pc.dim("Example: model_preset: claude"),
+        pc.dim("Example: model_preset: auto"),
       ].join("\n"),
     );
     // NOTE: Do not exit — matrix still renders with ❌ NO PRESET rows for guidance.
@@ -32,7 +32,11 @@ export async function renderProfileReport(
   // ── Summary line when all rows from preset (no overrides) ───────────────
   if (report.allFromPreset && !report.missingPreset) {
     p.note(
-      pc.dim(`All agents configured from preset (${report.profileName})`),
+      pc.dim(
+        report.profileName === "auto"
+          ? "Agents follow the current vendor's configuration"
+          : `All agents configured from preset (${report.profileName})`,
+      ),
       "Preset",
     );
   }
@@ -127,7 +131,7 @@ export async function renderProfileReport(
     const sourceTag =
       "source" in row && row.source === "override"
         ? pc.cyan(" (override)")
-        : pc.dim(" (preset)");
+        : pc.dim(row.source === "vendor" ? " (vendor)" : " (preset)");
     matrixLines.push(
       dataRow(`${row.role}${sourceTag}`, row.model, row.cli, authLabel),
     );
