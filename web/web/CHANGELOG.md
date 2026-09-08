@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.3.0](https://github.com/first-fluke/oh-my-agent/compare/web-v6.2.0...web-v6.3.0) (2026-09-08)
+
+
+### Features
+
+* **cli:** add free provider routing and local config overrides ([7ae1ad1](https://github.com/first-fluke/oh-my-agent/commit/7ae1ad1c84882a83710b70d12b2b94a4d51caf78))
+
 ## [6.2.0](https://github.com/first-fluke/oh-my-agent/compare/web-v6.1.0...web-v6.2.0) (2026-09-08)
 
 
