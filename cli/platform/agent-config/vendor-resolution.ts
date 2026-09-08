@@ -1,19 +1,17 @@
-import fs from "node:fs";
-import path from "node:path";
 import { resolveAutoVendor } from "../../io/runtime-dispatch/detect.js";
-import { evaluateCueFile } from "../../utils/cue.js";
+import { loadOmaConfig } from "../../utils/config.js";
+import {
+  resolveFreeProvider,
+  resolveFreeVendor,
+} from "../../utils/free-provider.js";
 import {
   BUILT_IN_PRESET_ALIASES,
   BUILT_IN_PRESETS,
 } from "../built-in-presets.js";
 import { getModelSpec, ownerToVendor } from "../model-registry.js";
 import { AGENT_CONFIG_ALIASES, AGENT_IDS } from "./agent-ids.js";
-import {
-  findConfigFileUp,
-  parseOmaConfig,
-  readCliConfig,
-} from "./config-io.js";
-import { type AgentSpec, OmaConfigSchema } from "./schemas.js";
+import { readCliConfig } from "./config-io.js";
+import type { AgentSpec } from "./schemas.js";
 import type {
   AgentId,
   BuiltInPresetKey,
@@ -99,41 +97,15 @@ export function resolveVendor(
   const cwd = process.cwd();
   const cliConfig = readCliConfig(cwd);
 
-  // Attempt to load oma-config.cue (first) or oma-config.yaml for agents map override + model_preset
-  const cuePath = findConfigFileUp(cwd, path.join(".agents", "oma-config.cue"));
-  const configPath = findConfigFileUp(
-    cwd,
-    path.join(".agents", "oma-config.yaml"),
-  );
-  let parsedConfig: OmaConfig | null = null;
-  let agentsOverride: Partial<Record<AgentId, AgentSpec>> | undefined;
-  let defaultCli: string | undefined;
-
-  if (cuePath) {
-    const cueResult = evaluateCueFile(cuePath);
-    if (
-      cueResult.success &&
-      cueResult.data &&
-      typeof cueResult.data === "object"
-    ) {
-      const parsed = OmaConfigSchema.safeParse(cueResult.data);
-      if (parsed.success) {
-        parsedConfig = parsed.data as OmaConfig;
-        agentsOverride = parsedConfig?.agents;
-        defaultCli = parsedConfig?.default_cli;
-      }
-    }
-  }
-
-  if (!parsedConfig && configPath) {
-    try {
-      const raw = fs.readFileSync(configPath, "utf-8");
-      parsedConfig = parseOmaConfig(raw, configPath);
-      agentsOverride = parsedConfig?.agents;
-      defaultCli = parsedConfig?.default_cli;
-    } catch {
-      // ignore
-    }
+  const parsedConfig = loadOmaConfig(cwd);
+  const agentsOverride = parsedConfig?.agents;
+  const defaultCli = parsedConfig?.default_cli;
+  if (parsedConfig?.model_preset === "free") {
+    resolveFreeProvider(parsedConfig);
+    return {
+      vendor: resolveFreeVendor(parsedConfig, vendorOverride),
+      config: cliConfig,
+    };
   }
 
   const normalizedAgentId = agentId.replace(/-agent$/i, "");

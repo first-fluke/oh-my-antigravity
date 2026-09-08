@@ -30,6 +30,7 @@ export type DispatchPlan = {
 };
 
 export type AgentPlan = {
+  freeProvider?: import("../../utils/free-provider.js").FreeProvider;
   cli: Exclude<RuntimeVendor, "unknown">;
   /** Absent in auto mode: the vendor's agent/session configuration selects the model. */
   cliModel?: string;

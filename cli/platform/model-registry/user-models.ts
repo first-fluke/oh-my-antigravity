@@ -6,59 +6,18 @@
 // `.agents/config/` wholesale, so slugs kept there were never durable.
 // Migration 022 folds any surviving file into oma-config (design 024).
 
-import fs from "node:fs";
-import path from "node:path";
-import { parse as parseYaml } from "yaml";
+import { loadOmaConfig } from "../../utils/config.js";
 import { ModelSpecSchema } from "./schema.js";
 import type { ModelSpec } from "./types.js";
 
-/**
- * Walk up the directory tree from startDir looking for relativePath.
- * Returns the absolute file path if found, or null.
- */
-function findFileUp(startDir: string, relativePath: string): string | null {
-  let current = path.resolve(startDir);
-  const root = path.parse(current).root;
-  while (current !== root) {
-    const candidate = path.join(current, relativePath);
-    if (fs.existsSync(candidate)) return candidate;
-    current = path.dirname(current);
-  }
-  return null;
-}
-
-/**
- * Read the inline `models:` block from .agents/oma-config.yaml, walking up from
- * `cwd`. Returns the raw record without validating entries — callers pass it to
- * `getModelSpec(slug, userModels)`, which validates the single slug it needs via
- * ModelSpecSchema and warns on failure. Returns undefined when the file is
- * missing, unreadable, malformed, or has no `models:` key.
- */
+/** Read inline models from the effective shared + local project config. */
 export function loadInlineUserModels(
   cwd?: string,
 ): Record<string, unknown> | undefined {
-  const searchDir = cwd ?? process.cwd();
-  const filePath = findFileUp(
-    searchDir,
-    path.join(".agents", "oma-config.yaml"),
-  );
-  if (!filePath) return undefined;
-
-  let raw: unknown;
-  try {
-    raw = parseYaml(fs.readFileSync(filePath, "utf-8"));
-  } catch {
-    // Malformed YAML — the config loader reports this elsewhere; stay silent
-    // here so a probe/doctor read does not double-warn.
-    return undefined;
-  }
-
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
-  const models = (raw as Record<string, unknown>).models;
-  if (!models || typeof models !== "object" || Array.isArray(models)) {
-    return undefined;
-  }
-  return models as Record<string, unknown>;
+  const models = loadOmaConfig(cwd)?.models;
+  return models && typeof models === "object" && !Array.isArray(models)
+    ? models
+    : undefined;
 }
 
 /**

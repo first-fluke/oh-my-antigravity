@@ -5,6 +5,7 @@ import {
   detectRuntimeVendor,
   resolveAutoVendor,
 } from "./runtime-dispatch/detect.js";
+import { applyFreeProvider } from "./runtime-dispatch/free-invocation.js";
 import {
   buildExternalInvocation,
   type ExternalInvocationOptions,
@@ -196,6 +197,9 @@ export function planDispatch(
     const planOverride =
       targetVendor === "pi" || runtimeVendor === "pi" ? "pi" : undefined;
     plan = resolveAgentPlan(agentId, planOverride, env);
+    if (plan.freeProvider) {
+      plan = resolveAgentPlan(agentId, targetVendor, env);
+    }
     // An inherited plan follows the already resolved dispatch target, including
     // an explicit --vendor choice. It never injects an OMA default model.
     if (!plan.cliModel)
@@ -236,6 +240,15 @@ export function planDispatch(
     inv: Invocation,
   ): DispatchPlan => {
     if (activePlan) applyResolvedPlan(inv, activePlan, targetVendor);
+    if (activePlan?.freeProvider) {
+      applyFreeProvider({
+        invocation: inv,
+        vendor: targetVendor,
+        provider: activePlan.freeProvider,
+        env,
+        workspace,
+      });
+    }
     return { mode, runtimeVendor, targetVendor, reason, invocation: inv };
   };
 

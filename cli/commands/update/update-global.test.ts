@@ -347,6 +347,29 @@ describe("update --global: _install.json lifecycle", () => {
     expect(new Date(meta.installedAt).toISOString()).toBe(meta.installedAt);
   });
 
+  it.each([false, true])(
+    "preserves local config byte-for-byte during update (force=%s)",
+    async (force) => {
+      const { dir: repoDir } = await tarballState.downloadAndExtract();
+      for (const name of ["oma-config.local.cue", "oma-config.local.yaml"]) {
+        fs.writeFileSync(
+          path.join(tmpDir, ".agents", name),
+          '// personal settings\nmodel_preset: "free"\n',
+        );
+        fs.writeFileSync(
+          path.join(repoDir, ".agents", name),
+          "accidentally included upstream local settings",
+        );
+      }
+      await update({ global: true, force, ci: true });
+      for (const name of ["oma-config.local.cue", "oma-config.local.yaml"]) {
+        expect(
+          fs.readFileSync(path.join(tmpDir, ".agents", name), "utf8"),
+        ).toBe('// personal settings\nmodel_preset: "free"\n');
+      }
+    },
+  );
+
   // Note: through the full update flow, `cpSync` overwrites
   // `_version.json` with the bundled (fresh) copy before `saveLocalVersion`
   // runs, so unrelated fields like `needsReconcile` are not preserved

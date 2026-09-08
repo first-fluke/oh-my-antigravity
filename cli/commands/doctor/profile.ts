@@ -23,6 +23,13 @@ import {
   type ModelSpec,
   ownerToVendor,
 } from "../../platform/model-registry.js";
+import { loadConfigLayers } from "../../utils/config-layers.js";
+import {
+  freeApiKey,
+  probeFreeProvider,
+  resolveFreeProvider,
+  resolveFreeVendor,
+} from "../../utils/free-provider.js";
 import { AUTH_CHECKERS, isOpencodeAuthenticated } from "../../vendors/index.js";
 import {
   type DeprecatedOAuthSessionResult,
@@ -107,18 +114,6 @@ function checkAuthStatus(cli: string, spec: ModelSpec | undefined): AuthStatus {
 }
 
 // ---------------------------------------------------------------------------
-// oma-config.yaml loader
-// ---------------------------------------------------------------------------
-
-function loadOmaConfig(cwd: string): Partial<OmaConfig> | null {
-  try {
-    return loadUserConfig(cwd);
-  } catch {
-    return null;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Preset resolution (mirrors resolveAgentPlanFromConfig step 1, read-only)
 // ---------------------------------------------------------------------------
 
@@ -127,10 +122,10 @@ function resolvePreset(
 ): { preset: ModelPreset; resolvedKey: string } | null {
   const modelPreset = config.model_preset;
   if (!modelPreset) return null;
-  if (modelPreset === "auto") {
+  if (modelPreset === "auto" || modelPreset === "free") {
     return {
       preset: { description: "Vendor agent defaults", agent_defaults: {} },
-      resolvedKey: "auto",
+      resolvedKey: modelPreset,
     };
   }
 
@@ -198,6 +193,17 @@ export interface ProfileRow {
 }
 
 export interface ProfileReport {
+  configSources?: { shared?: string; local?: string; environment?: string };
+  configError?: string;
+  freeProvider?: {
+    baseUrl?: string;
+    model?: string;
+    apiKeyEnv?: string;
+    keyPresent: boolean;
+    reachable: boolean;
+    error?: string;
+    environmentOverrides: string[];
+  };
   /** Resolved preset key (e.g. "claude") or the raw model_preset value. */
   profileName: string;
   rows: ProfileRow[];
@@ -217,7 +223,15 @@ export interface ProfileReport {
 export async function collectProfileReport(
   cwd: string,
 ): Promise<ProfileReport> {
-  const config = loadOmaConfig(cwd);
+  let configSources: ProfileReport["configSources"];
+  let configError: string | undefined;
+  let config: Partial<OmaConfig> | null = null;
+  try {
+    config = loadUserConfig(cwd);
+    configSources = loadConfigLayers(cwd).sources;
+  } catch (error) {
+    configError = error instanceof Error ? error.message : String(error);
+  }
   const resolved = config ? resolvePreset(config) : null;
 
   const missingPreset = resolved === null;
@@ -229,6 +243,30 @@ export async function collectProfileReport(
 
   const agentsOverride = config?.agents ?? {};
   let hasAnyOverride = false;
+
+  let freeProvider: ProfileReport["freeProvider"];
+  let freeVendor = "unknown";
+  if (profileName === "free" && config) {
+    freeProvider = {
+      keyPresent: false,
+      reachable: false,
+      environmentOverrides: ["FREELLM_BASE_URL", "FREELLM_MODEL"].filter(
+        (name) => process.env[name] !== undefined,
+      ),
+    };
+    try {
+      Object.assign(freeProvider, resolveFreeProvider(config));
+      freeVendor = resolveFreeVendor(config);
+      const provider = resolveFreeProvider(config);
+      freeApiKey(provider);
+      freeProvider.keyPresent = true;
+      await probeFreeProvider(provider);
+      freeProvider.reachable = true;
+    } catch (error) {
+      freeProvider.error =
+        error instanceof Error ? error.message : String(error);
+    }
+  }
 
   // Build rows in canonical order
   const rows: ProfileRow[] = ROLE_ORDER.map((role) => {
@@ -243,6 +281,19 @@ export async function collectProfileReport(
       };
     }
 
+    if (freeProvider) {
+      return {
+        role,
+        model: freeProvider.model ?? "(invalid free config)",
+        cli: freeVendor,
+        authStatus: freeProvider.reachable
+          ? "logged_in"
+          : freeProvider.keyPresent
+            ? "unknown"
+            : "not_logged_in",
+        source: "preset",
+      };
+    }
     const typedRole = role as AgentId;
     const override = agentsOverride[typedRole];
     if (profileName === "auto" && !override) {
@@ -303,6 +354,9 @@ export async function collectProfileReport(
 
   return {
     profileName,
+    configSources,
+    configError,
+    freeProvider,
     rows,
     qwenOAuth,
     isAntigravity,
@@ -320,6 +374,9 @@ export function serializeProfileReportAsJson(report: ProfileReport): string {
   return JSON.stringify(
     {
       profileName: report.profileName,
+      configSources: report.configSources,
+      configError: report.configError,
+      freeProvider: report.freeProvider,
       missingPreset: report.missingPreset,
       allFromPreset: report.allFromPreset,
       isAntigravity: report.isAntigravity,

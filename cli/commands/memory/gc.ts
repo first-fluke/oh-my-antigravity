@@ -18,7 +18,7 @@ import type {
   MemoryGcResult,
   MemoryGcScope,
 } from "../../types/memory.js";
-import { evaluateCueFile } from "../../utils/cue.js";
+import { loadOmaConfig } from "../../utils/config.js";
 import { findFileUpwards, resolveProjectRoot } from "../../utils/fs-utils.js";
 
 // Memory-store dirs swept for ephemeral artifacts: the canonical oma store
@@ -65,41 +65,29 @@ type RawConfigFile = { memory?: { gc?: RawGcConfig } };
 export function loadMemoryGcConfig(
   cwd: string = process.cwd(),
 ): MemoryGcConfig {
-  const candidates = [
-    findFileUpwards(cwd, join(".agents", "oma-config.cue")),
-    findFileUpwards(cwd, join(".agents", "oma-config.yaml")),
-    findFileUpwards(cwd, join(".agents", "config", "defaults.yaml")),
-  ];
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-    let raw: RawGcConfig | undefined;
-    try {
-      if (candidate.endsWith(".cue")) {
-        const result = evaluateCueFile(candidate);
-        if (
-          result.success &&
-          result.data &&
-          typeof result.data === "object" &&
-          !Array.isArray(result.data)
-        ) {
-          raw = (result.data as RawConfigFile).memory?.gc;
-        }
-      } else {
-        const parsed = parseYaml(readFileSync(candidate, "utf-8")) as
-          | RawConfigFile
-          | null
-          | undefined;
-        raw = parsed?.memory?.gc;
+  let raw = (loadOmaConfig(cwd) as RawConfigFile | null)?.memory?.gc;
+  if (!raw) {
+    const fallback = findFileUpwards(
+      cwd,
+      join(".agents", "config", "defaults.yaml"),
+    );
+    if (fallback) {
+      try {
+        raw = (
+          parseYaml(readFileSync(fallback, "utf8")) as RawConfigFile | null
+        )?.memory?.gc;
+      } catch {
+        /* optional defaults */
       }
-    } catch {
-      raw = undefined;
     }
-    if (!raw) continue;
+  }
+  if (raw) {
     const cfg: MemoryGcConfig = {};
     if (typeof raw.keep_sessions === "number") cfg.keep = raw.keep_sessions;
     if (typeof raw.max_age_days === "number") cfg.maxAgeDays = raw.max_age_days;
-    if (cfg.keep !== undefined || cfg.maxAgeDays !== undefined) return cfg;
+    return cfg;
   }
+
   return {};
 }
 

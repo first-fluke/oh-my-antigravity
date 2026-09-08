@@ -132,6 +132,8 @@ export interface OmaConfig {
   language: string;
   /** "auto" inherits vendor agent settings; otherwise a built-in or custom preset key. */
   model_preset: string;
+  /** Local FreeLLMAPI connection; credentials are referenced by env name only. */
+  free?: { base_url?: string; api_key_env?: string; model?: string };
   date_format?: "ISO" | "US" | "EU";
   timezone?: string;
   auto_update_cli?: boolean;

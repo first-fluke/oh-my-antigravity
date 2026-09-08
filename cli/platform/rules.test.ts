@@ -60,8 +60,8 @@ describe("readRules", () => {
   });
 
   it("should parse frontmatter fields from rule files", () => {
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      true,
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (file: string) => !String(file).includes("oma-config"),
     );
     (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
       "frontend.md",
@@ -80,8 +80,8 @@ describe("readRules", () => {
   });
 
   it("should filter non-.md files", () => {
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      true,
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (file: string) => !String(file).includes("oma-config"),
     );
     (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
       ".gitkeep",
@@ -107,8 +107,8 @@ describe("applyCursorRules", () => {
   });
 
   it("should generate .mdc files with Cursor frontmatter", () => {
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      true,
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (file: string) => !String(file).includes("oma-config"),
     );
     (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
       "frontend.md",
@@ -132,8 +132,8 @@ describe("applyCursorRules", () => {
   });
 
   it("should respect alwaysApply: true", () => {
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      true,
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (file: string) => !String(file).includes("oma-config"),
     );
     (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
       "i18n.md",
@@ -162,8 +162,8 @@ describe("generateClaudeRules", () => {
   });
 
   it("should generate .md files with paths frontmatter for scoped rules", () => {
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      true,
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (file: string) => !String(file).includes("oma-config"),
     );
     (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
       "frontend.md",
@@ -186,8 +186,8 @@ describe("generateClaudeRules", () => {
   });
 
   it("should omit paths for alwaysApply rules", () => {
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      true,
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (file: string) => !String(file).includes("oma-config"),
     );
     (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
       "i18n.md",
@@ -433,8 +433,8 @@ describe("mergeRulesIndexForVendor", () => {
   it("should replace existing OMA block on update", () => {
     const omaStart = "<!-- OMA:START";
     const omaEnd = "<!-- OMA:END -->";
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      true,
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (file: string) => !String(file).includes("oma-config"),
     );
     (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
       "frontend.md",

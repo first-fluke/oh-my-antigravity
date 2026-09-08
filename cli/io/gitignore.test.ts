@@ -180,6 +180,8 @@ describe("ensureOmaProjectGitignore", () => {
 
     expect(result.skipped).toBe(false);
     expect(result.added).toEqual([
+      ".agents/oma-config.local.cue",
+      ".agents/oma-config.local.yaml",
       ANTIGRAVITYCLI_GITIGNORE,
       AGENTS_RESULTS_GITIGNORE,
       AGENTS_STATE_GITIGNORE,
@@ -208,6 +210,8 @@ describe("ensureOmaProjectGitignore", () => {
     const result = ensureOmaProjectGitignore(repo);
 
     expect(result.added).toEqual([
+      ".agents/oma-config.local.cue",
+      ".agents/oma-config.local.yaml",
       AGENTS_RESULTS_GITIGNORE,
       AGENTS_STATE_GITIGNORE,
       AGENTS_BACKUP_GITIGNORE,
@@ -221,13 +225,15 @@ describe("ensureOmaProjectGitignore", () => {
   it("does not duplicate existing entries", () => {
     writeFileSync(
       join(repo, ".gitignore"),
-      ".antigravitycli/\n.agents/results/\n.agents/state/\n.agents/backup/\ndocs/plans/\n.migration-backup/\n.qwen/tmp/\n",
+      ".agents/oma-config.local.cue\n.agents/oma-config.local.yaml\n.antigravitycli/\n.agents/results/\n.agents/state/\n.agents/backup/\ndocs/plans/\n.migration-backup/\n.qwen/tmp/\n",
     );
 
     const result = ensureOmaProjectGitignore(repo);
 
     expect(result.added).toEqual([]);
     expect(result.alreadyPresent).toEqual([
+      ".agents/oma-config.local.cue",
+      ".agents/oma-config.local.yaml",
       ANTIGRAVITYCLI_GITIGNORE,
       AGENTS_RESULTS_GITIGNORE,
       AGENTS_STATE_GITIGNORE,

@@ -1,8 +1,8 @@
 import { execSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { parseOmaConfig } from "../../../platform/agent-config.js";
 import type { DocRefsIndex } from "../../../types/docs.js";
+import { loadOmaConfig } from "../../../utils/config.js";
 
 const URL_REPORT_FILENAME = "url-drift.json";
 
@@ -16,15 +16,7 @@ export function urlReportPath(repoRoot: string): string {
  * (URL checking enabled) when the config or field is absent.
  */
 export function readCheckUrlsConfig(repoRoot: string): boolean {
-  try {
-    const cfgPath = path.join(repoRoot, ".agents", "oma-config.yaml");
-    if (!fs.existsSync(cfgPath)) return true;
-    const yaml = fs.readFileSync(cfgPath, "utf-8");
-    const cfg = parseOmaConfig(yaml);
-    return cfg?.docs?.check_urls ?? true;
-  } catch {
-    return true;
-  }
+  return loadOmaConfig(repoRoot)?.docs?.check_urls ?? true;
 }
 
 /**
@@ -33,15 +25,7 @@ export function readCheckUrlsConfig(repoRoot: string): boolean {
  * absent (no exclusions by default).
  */
 export function readDocsExcludeConfig(repoRoot: string): string[] {
-  try {
-    const cfgPath = path.join(repoRoot, ".agents", "oma-config.yaml");
-    if (!fs.existsSync(cfgPath)) return [];
-    const yaml = fs.readFileSync(cfgPath, "utf-8");
-    const cfg = parseOmaConfig(yaml);
-    return cfg?.docs?.exclude ?? [];
-  } catch {
-    return [];
-  }
+  return loadOmaConfig(repoRoot)?.docs?.exclude ?? [];
 }
 
 /** Detect whether `lychee` is on PATH. */

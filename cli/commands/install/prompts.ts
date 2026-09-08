@@ -102,6 +102,11 @@ export async function promptModelPreset(
       hint: "Use the current CLI's native agent configuration",
     },
     {
+      value: "free",
+      label: "FreeLLMAPI",
+      hint: "Local API gateway (requires FREELLM_API_KEY and a running server)",
+    },
+    {
       value: "claude",
       label: "Claude Code",
       hint: "Claude Max subscription holders",

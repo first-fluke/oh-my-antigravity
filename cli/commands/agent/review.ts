@@ -3,10 +3,16 @@ import fs from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import color from "picocolors";
+import { loadUserConfig } from "../../io/runtime-dispatch/config-loader.js";
+import { type Invocation, planDispatch } from "../../io/runtime-dispatch.js";
 import {
   resolveVendor,
   type VendorConfig,
 } from "../../platform/agent-config.js";
+import {
+  probeFreeProvider,
+  resolveFreeProvider,
+} from "../../utils/free-provider.js";
 import { registerSignalCleanup } from "../../utils/process-signals.js";
 import { isProcessRunning, resolveSessionId } from "./common.js";
 
@@ -31,13 +37,21 @@ function buildReviewDiffPrompt(
   }
 }
 
-function buildReviewArgs(
-  vendor: string,
-  vendorConfig: VendorConfig,
-  prompt: string,
-  uncommitted: boolean,
-  cwd: string,
-): string[] {
+interface ReviewArgsRequest {
+  vendor: string;
+  vendorConfig: VendorConfig;
+  prompt: string;
+  uncommitted: boolean;
+  cwd: string;
+}
+
+function buildReviewArgs({
+  vendor,
+  vendorConfig,
+  prompt,
+  uncommitted,
+  cwd,
+}: ReviewArgsRequest): string[] {
   const command = vendorConfig.command || vendor;
 
   if (vendor === "codex") {
@@ -102,15 +116,34 @@ export async function reviewAgent(options: {
 
   const vendorConfig = config?.vendors?.[vendor] || {};
   const uncommitted = options.uncommitted ?? true;
-  const reviewArgs = buildReviewArgs(
-    vendor,
-    vendorConfig,
-    prompt,
-    uncommitted,
-    resolvedWorkspace,
-  );
-  const command = reviewArgs[0] ?? vendor;
-  const args = reviewArgs.slice(1);
+  const effectiveConfig = loadUserConfig(process.cwd());
+  let invocation: Invocation;
+  if (effectiveConfig.model_preset === "free") {
+    await probeFreeProvider(resolveFreeProvider(effectiveConfig));
+    invocation = planDispatch(
+      "qa",
+      vendor,
+      vendorConfig,
+      vendorConfig.prompt_flag ?? "-p",
+      buildReviewDiffPrompt(prompt, uncommitted, resolvedWorkspace),
+      process.env,
+      { workspace: resolvedWorkspace, readOnly: true },
+    ).invocation;
+  } else {
+    const reviewArgs = buildReviewArgs({
+      vendor,
+      vendorConfig,
+      prompt,
+      uncommitted,
+      cwd: resolvedWorkspace,
+    });
+    invocation = {
+      command: reviewArgs[0] ?? vendor,
+      args: reviewArgs.slice(1),
+      env: process.env,
+    };
+  }
+  const { command, args, env } = invocation;
 
   const logFile = path.join(tmpdir(), `review-${sessionId}.log`);
   const pidFile = path.join(tmpdir(), `review-${sessionId}.pid`);
@@ -127,6 +160,7 @@ export async function reviewAgent(options: {
     cwd: resolvedWorkspace,
     stdio: ["ignore", logStream, logStream],
     detached: false,
+    env,
   });
 
   if (!child.pid) {

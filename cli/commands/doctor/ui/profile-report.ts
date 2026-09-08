@@ -18,6 +18,30 @@ export async function renderProfileReport(
   console.clear();
   p.intro(pc.bgMagenta(pc.white(` Profile Health (${report.profileName}) `)));
 
+  if (report.configSources) {
+    p.note(
+      Object.entries(report.configSources)
+        .map(([layer, file]) => `${layer}: ${file}`)
+        .join("\n") || "No project config found",
+      "Configuration sources",
+    );
+  }
+  if (report.configError) p.log.error(report.configError);
+  if (report.freeProvider) {
+    const free = report.freeProvider;
+    p.note(
+      [
+        `Base URL: ${free.baseUrl ?? "invalid"}`,
+        `Model: ${free.model ?? "invalid"}`,
+        `API key: ${free.apiKeyEnv ?? "FREELLM_API_KEY"} (${free.keyPresent ? "set" : "missing"})`,
+        `Server: ${free.reachable ? "reachable" : "unavailable"}`,
+        `Environment overrides: ${free.environmentOverrides.join(", ") || "none"}`,
+      ].join("\n"),
+      "FreeLLMAPI",
+    );
+    if (free.error) p.log.error(free.error);
+  }
+
   if (report.missingPreset) {
     p.log.error(
       [

@@ -1,5 +1,7 @@
 import * as child_process from "node:child_process";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { loadUserConfig } from "../../io/runtime-dispatch/config-loader.js";
+import { probeFreeProvider } from "../../utils/free-provider.js";
 import { reviewAgent } from "./review.js";
 
 const mockFsFunctions = vi.hoisted(() => ({
@@ -26,10 +28,18 @@ vi.mock("node:child_process", () => ({
 }));
 
 vi.mock("../../lib/memory.js", () => mockMemoryFunctions);
+vi.mock("../../io/runtime-dispatch/config-loader.js", () => ({
+  loadUserConfig: vi.fn(() => ({})),
+}));
+vi.mock("../../utils/free-provider.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../utils/free-provider.js")>()),
+  probeFreeProvider: vi.fn(),
+}));
 
 describe("agent/review.ts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(loadUserConfig).mockReturnValue({});
     mockMemoryFunctions.getSessionMeta.mockReturnValue({});
     mockMemoryFunctions.formatSessionId.mockReturnValue(
       "session-20260327-120000",
@@ -38,6 +48,7 @@ describe("agent/review.ts", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it("spawns codex review with --uncommitted by default", async () => {
@@ -172,7 +183,9 @@ describe("agent/review.ts", () => {
   });
 
   it("prints review output on exit", async () => {
-    mockFsFunctions.existsSync.mockReturnValue(true);
+    mockFsFunctions.existsSync.mockImplementation(
+      (file: string) => !String(file).includes("oma-config"),
+    );
     mockFsFunctions.openSync.mockReturnValue(123);
     mockFsFunctions.readFileSync.mockReturnValue(
       "Found 2 issues:\n- P1: SQL injection\n- P2: Missing auth",
@@ -203,5 +216,27 @@ describe("agent/review.ts", () => {
       expect.stringContaining("SQL injection"),
     );
     expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+  it("routes free reviews through the gateway with the free model", async () => {
+    mockFsFunctions.existsSync.mockReturnValue(false);
+    mockFsFunctions.openSync.mockReturnValue(123);
+    vi.mocked(loadUserConfig).mockReturnValue({ model_preset: "free" });
+    vi.stubEnv("FREELLM_API_KEY", "review-test-key");
+    vi.stubEnv("OMA_RUNTIME_VENDOR", "codex");
+    vi.mocked(child_process.spawn).mockReturnValue({
+      pid: 44444,
+      on: vi.fn(),
+    } as unknown as child_process.ChildProcess);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    await reviewAgent({ model: "codex", workspace: "/tmp" });
+    expect(probeFreeProvider).toHaveBeenCalledOnce();
+    const [, args, options] =
+      vi.mocked(child_process.spawn).mock.calls[0] ?? [];
+    expect(args).toContain("auto");
+    expect(args).toContain('model_provider="oma_free"');
+    expect(JSON.stringify(args)).not.toContain("review-test-key");
+    expect(options).toMatchObject({
+      env: { OMA_MODEL_PRESET: "free", OMA_FREELLM_API_KEY: "review-test-key" },
+    });
   });
 });

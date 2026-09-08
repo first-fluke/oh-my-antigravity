@@ -1,9 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-import { parse as parseYaml } from "yaml";
 import type { OmaConfig } from "../../platform/agent-config.js";
-import { evaluateCueFile } from "../../utils/cue.js";
-import { findFileUpwards } from "../../utils/fs-utils.js";
+import {
+  ConfigLayerError,
+  loadConfigLayers,
+} from "../../utils/config-layers.js";
 import { ConfigError } from "./config-error.js";
 
 // ---------------------------------------------------------------------------
@@ -51,95 +50,25 @@ function assertNotLegacyPreset(modelPreset: string, filePath: string): void {
   }
 }
 
-/**
- * Load user config from .agents/oma-config.cue (first) or .agents/oma-config.yaml.
- * Returns partial OmaConfig shape — only fields present in the file are set.
- *
- * Throws ConfigError with file:line:col when the file exists but contains
- * invalid YAML, so the user gets an actionable error message.
- * Throws ConfigError when model_preset is a legacy key (claude-only, codex-only, etc.)
- * to prompt the user to run `oma update`.
- */
-export function loadUserConfig(cwd: string): Partial<OmaConfig> {
-  const cuePath = findFileUpwards(cwd, path.join(".agents", "oma-config.cue"));
-  const yamlPath = findFileUpwards(
-    cwd,
-    path.join(".agents", "oma-config.yaml"),
-  );
-
-  if (cuePath) {
-    const result = evaluateCueFile(cuePath);
-    if (result.success) {
-      if (
-        result.data &&
-        typeof result.data === "object" &&
-        !Array.isArray(result.data)
-      ) {
-        const config = result.data as Partial<OmaConfig>;
-        if (typeof config.model_preset === "string") {
-          assertNotLegacyPreset(config.model_preset, cuePath);
-        }
-        return config;
-      }
-      return {};
-    }
-
-    if (yamlPath) {
-      if (result.missingCli) {
-        console.warn(
-          `[runtime-dispatch] Found ${cuePath} but 'cue' CLI is not installed in PATH. Falling back to ${yamlPath}.`,
-        );
-      } else {
-        console.warn(
-          `[runtime-dispatch] Failed to evaluate CUE at ${cuePath}: ${result.error}. Falling back to ${yamlPath}.`,
-        );
-      }
-    } else {
-      if (result.missingCli) {
-        throw new ConfigError(
-          `Found ${cuePath} but 'cue' CLI is not installed or not in PATH.\n` +
-            `  Install CUE from https://cuelang.org/docs/install/ or create .agents/oma-config.yaml instead.`,
-        );
-      }
-      throw new ConfigError(
-        `Failed to evaluate CUE at ${cuePath}: ${result.error}`,
+/** Load the effective project config; retain the legacy preset diagnostic. */
+export function loadUserConfig(
+  cwd: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Partial<OmaConfig> {
+  try {
+    const { config, sources } = loadConfigLayers(cwd, env);
+    if (typeof config.model_preset === "string") {
+      assertNotLegacyPreset(
+        config.model_preset,
+        sources.local ?? sources.shared ?? cwd,
       );
     }
-  }
-
-  if (!yamlPath) return {};
-  let content: string;
-  try {
-    content = fs.readFileSync(yamlPath, "utf-8");
-  } catch {
-    return {};
-  }
-  try {
-    const parsed = parseYaml(content);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      const config = parsed as Partial<OmaConfig>;
-      // Hard-error on legacy preset names before returning config
-      if (typeof config.model_preset === "string") {
-        assertNotLegacyPreset(config.model_preset, yamlPath);
-      }
-      return config;
-    }
-    return {};
-  } catch (err) {
-    // Re-throw ConfigError as-is (includes both YAML parse errors and legacy preset errors)
-    if (err instanceof ConfigError) throw err;
-    const pos =
-      err &&
-      typeof err === "object" &&
-      "linePos" in err &&
-      Array.isArray((err as { linePos: unknown[] }).linePos) &&
-      (err as { linePos: Array<{ line: number; col: number }> }).linePos
-        .length > 0
-        ? (err as { linePos: Array<{ line: number; col: number }> }).linePos[0]
-        : null;
-    const location = pos ? `${yamlPath}:${pos.line}:${pos.col}` : yamlPath;
+    return config;
+  } catch (error) {
+    if (error instanceof ConfigLayerError && error.local) throw error;
+    if (error instanceof ConfigError) throw error;
     throw new ConfigError(
-      `Failed to parse YAML at ${location}: ${err instanceof Error ? err.message : String(err)}`,
+      error instanceof Error ? error.message : String(error),
     );
   }
 }

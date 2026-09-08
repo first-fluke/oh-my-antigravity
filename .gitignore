@@ -19,6 +19,8 @@ bin/*.js
 .env.*.local
 
 # OMA outputs
+.agents/oma-config.local.cue
+.agents/oma-config.local.yaml
 .agents/plan.json
 # docs/plans/ is dogfooding scratch in this dev repo. Files that committed
 # docs reference are deliberately tracked via `git add -f` (tracked files

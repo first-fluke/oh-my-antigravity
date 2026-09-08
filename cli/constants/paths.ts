@@ -69,6 +69,8 @@ export const QWEN_TMP_GITIGNORE = asGitignoreDir(QWEN_TMP_DIR);
 
 /** Lines appended by `ensureOmaProjectGitignore()` during install / link / update. */
 export const OMA_PROJECT_GITIGNORE_PATTERNS = [
+  ".agents/oma-config.local.cue",
+  ".agents/oma-config.local.yaml",
   ANTIGRAVITYCLI_GITIGNORE,
   AGENTS_RESULTS_GITIGNORE,
   AGENTS_STATE_GITIGNORE,

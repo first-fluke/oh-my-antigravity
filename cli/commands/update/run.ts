@@ -47,6 +47,7 @@ import {
   loadOmaConfig,
   loadSerenaConfig,
 } from "../../utils/config.js";
+import { LOCAL_CONFIG_NAMES } from "../../utils/config-layers.js";
 import {
   formatGeminiDeprecationWarning,
   usesGeminiCli,
@@ -240,7 +241,15 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
         cpSync(join(repoDir, ".agents"), join(cwd, ".agents"), {
           recursive: true,
           force: true,
-          filter: (src) => !src.replace(/\\/g, "/").includes(".agents/eval"),
+          filter: (src) => {
+            const normalized = src.replace(/\\/g, "/");
+            return (
+              !normalized.includes(".agents/eval") &&
+              !LOCAL_CONFIG_NAMES.some((name) =>
+                normalized.endsWith(`/.agents/${name}`),
+              )
+            );
+          },
         });
 
         const evalDir = join(cwd, ".agents", "eval");

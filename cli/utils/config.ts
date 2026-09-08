@@ -1,87 +1,23 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { parse as parseYaml } from "yaml";
 import type { OmaConfig } from "../platform/agent-config.js";
-import { evaluateCueFile } from "./cue.js";
+import { ConfigLayerError, loadConfigLayers } from "./config-layers.js";
 import { isRecord } from "./type-guards.js";
 
 export type { OmaConfig } from "../platform/agent-config.js";
 
-/**
- * Read .agents/oma-config.cue (if present) or .agents/oma-config.yaml, walking up from cwd.
- * .agents/oma-config.cue takes priority over .agents/oma-config.yaml.
- * If 'cue' CLI is not available in PATH, logs a warning and falls back to .agents/oma-config.yaml.
- * Returns null if not found or if the file cannot be read.
- */
+/** Shared config plus a project-local overlay. Invalid local intent is fatal. */
 export function loadOmaConfig(cwd?: string): OmaConfig | null {
-  let dir = cwd || process.cwd();
-  for (let i = 0; i < 10; i++) {
-    const cuePath = join(dir, ".agents", "oma-config.cue");
-    const yamlPath = join(dir, ".agents", "oma-config.yaml");
-    const hasCue = existsSync(cuePath);
-    const hasYaml = existsSync(yamlPath);
-
-    if (hasCue) {
-      const result = evaluateCueFile(cuePath);
-      if (result.success) {
-        if (
-          result.data &&
-          typeof result.data === "object" &&
-          !Array.isArray(result.data)
-        ) {
-          return result.data as OmaConfig;
-        }
-        console.warn(`[config] CUE output at ${cuePath} is not an object`);
-      } else {
-        if (result.missingCli) {
-          console.warn(
-            `[config] Found ${cuePath} but 'cue' command was not found in PATH.${hasYaml ? " Falling back to oma-config.yaml." : ""}`,
-          );
-        } else {
-          console.warn(
-            `[config] Failed to evaluate CUE at ${cuePath}: ${result.error}.${hasYaml ? " Falling back to oma-config.yaml." : ""}`,
-          );
-        }
-      }
-    }
-
-    if (hasYaml) {
-      let content: string;
-      try {
-        content = readFileSync(yamlPath, "utf-8");
-      } catch {
-        return null;
-      }
-      try {
-        return parseYaml(content) as OmaConfig;
-      } catch (err) {
-        const pos =
-          err &&
-          typeof err === "object" &&
-          "linePos" in err &&
-          Array.isArray((err as { linePos: unknown[] }).linePos) &&
-          (err as { linePos: Array<{ line: number; col: number }> }).linePos
-            .length > 0
-            ? (err as { linePos: Array<{ line: number; col: number }> })
-                .linePos[0]
-            : null;
-        const location = pos ? `${yamlPath}:${pos.line}:${pos.col}` : yamlPath;
-        console.warn(
-          `[config] Failed to parse YAML at ${location}: ${err instanceof Error ? err.message : String(err)}`,
-        );
-        return null;
-      }
-    }
-
-    if (hasCue) {
-      return null;
-    }
-
-    const parent = join(dir, "..");
-    if (parent === dir) break;
-    dir = parent;
+  try {
+    const { config, sources } = loadConfigLayers(cwd);
+    return sources.shared || sources.local || sources.environment
+      ? (config as OmaConfig)
+      : null;
+  } catch (error) {
+    if (error instanceof ConfigLayerError && error.local) throw error;
+    console.warn(
+      `[config] ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return null;
   }
-  return null;
 }
 
 /**

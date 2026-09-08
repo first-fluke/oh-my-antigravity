@@ -10,6 +10,11 @@ import {
   resolveProbeTarget,
 } from "./probe.js";
 
+// Model probes must not run the developer's CUE config through the mocked vendor process.
+vi.mock("../../utils/cue.js", () => ({
+  evaluateCueFile: vi.fn(() => ({ success: true, data: {} })),
+}));
+
 vi.mock("node:child_process", () => ({
   spawnSync: vi.fn(),
 }));

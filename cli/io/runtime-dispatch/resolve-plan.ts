@@ -16,6 +16,10 @@ import {
   getModelSpec,
   type RuntimeId,
 } from "../../platform/model-registry.js";
+import {
+  resolveFreeProvider,
+  resolveFreeVendor,
+} from "../../utils/free-provider.js";
 import { ConfigError } from "./config-error.js";
 import { loadUserConfig } from "./config-loader.js";
 import { resolveAutoVendor } from "./detect.js";
@@ -96,6 +100,14 @@ export function resolveAgentPlanFromConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): AgentPlan {
   const modelPreset = config.model_preset;
+  if (modelPreset === "free") {
+    const freeProvider = resolveFreeProvider(config, env);
+    return {
+      cli: resolveFreeVendor(config, vendorOverride, env),
+      cliModel: freeProvider.model,
+      freeProvider,
+    };
+  }
   if (!modelPreset) {
     throw new ConfigError(
       `'model_preset' is missing from .agents/oma-config.yaml. Run 'oma install --preset <name>' to set one.`,
@@ -133,7 +145,11 @@ export function resolveAgentPlanFromConfig(
     }
     // Custom preset collision with built-in name was already resolved above (builtIn wins)
   } else {
-    const validBuiltIns = ["auto", ...Object.keys(BUILT_IN_PRESETS)].join(", ");
+    const validBuiltIns = [
+      "auto",
+      "free",
+      ...Object.keys(BUILT_IN_PRESETS),
+    ].join(", ");
     throw new ConfigError(
       `Unknown model_preset "${modelPreset}". Built-in presets: ${validBuiltIns}. ` +
         `Custom presets defined: ${Object.keys(config.custom_presets ?? {}).join(", ") || "(none)"}.`,
@@ -258,6 +274,6 @@ export function resolveAgentPlan(
   env: NodeJS.ProcessEnv = process.env,
 ): AgentPlan {
   const cwd = process.cwd();
-  const config = loadUserConfig(cwd);
+  const config = loadUserConfig(cwd, env);
   return resolveAgentPlanFromConfig(agentId, config, vendorOverride, env);
 }

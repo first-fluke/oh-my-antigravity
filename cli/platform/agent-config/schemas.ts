@@ -85,6 +85,17 @@ export const OmaConfigSchema = z
   .object({
     language: z.string().default("en"),
     model_preset: z.string().min(1),
+    free: z
+      .object({
+        base_url: z.string().min(1).optional(),
+        api_key_env: z
+          .string()
+          .regex(/^[A-Za-z_][A-Za-z0-9_]*$/)
+          .optional(),
+        model: z.string().min(1).optional(),
+      })
+      .strict()
+      .optional(),
     date_format: z.enum(["ISO", "US", "EU"]).optional(),
     timezone: z.string().optional(),
     auto_update_cli: z.boolean().optional(),

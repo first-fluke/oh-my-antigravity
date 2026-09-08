@@ -8,6 +8,7 @@ import {
   getCoordinationStorePath,
   resolveCoordinationFile,
 } from "../../io/memory.js";
+import { loadUserConfig } from "../../io/runtime-dispatch/config-loader.js";
 import { detectRuntimeVendor } from "../../io/runtime-dispatch/detect.js";
 import {
   createOpencodeSpawnWrapper,
@@ -53,6 +54,10 @@ import {
   resultEvidenceValid,
 } from "../../state/agent-results.js";
 import { emitEvent } from "../../state/events.js";
+import {
+  probeFreeProvider,
+  resolveFreeProvider,
+} from "../../utils/free-provider.js";
 import { resolveProjectRoot } from "../../utils/fs-utils.js";
 import { registerSignalCleanup } from "../../utils/process-signals.js";
 import { isProcessRunning } from "./common.js";
@@ -298,6 +303,10 @@ export async function spawnAgent(
   }
 
   const { vendor, config } = resolveVendor(agentId, vendorOverride);
+  const effectiveConfig = loadUserConfig(process.cwd());
+  if (effectiveConfig.model_preset === "free") {
+    await probeFreeProvider(resolveFreeProvider(effectiveConfig));
+  }
   const fallbackCandidates = resolveFailoverCandidates(
     fallbackVendors,
     vendor,
@@ -351,11 +360,6 @@ export async function spawnAgent(
   }
 
   const vendorConfig = config?.vendors?.[vendor] || {};
-  const logStream = fs.openSync(logFile, "w");
-  // Keep the historical combined log unless failover is explicitly requested.
-  // For failover, stderr is the only terminal-error input so task stdout cannot
-  // forge a quota/rate-limit signal.
-  const stderrStream = hasFailover ? fs.openSync(stderrFile, "w") : logStream;
 
   console.log(color.blue(`[${agentId}] Spawning subagent...`));
   console.log(color.dim(`  Vendor: ${vendor}`));
@@ -367,15 +371,27 @@ export async function spawnAgent(
   if (readOnly) {
     console.log(color.dim("  Mode: read-only (auto-approve suppressed)"));
   }
-  const dispatch = planDispatch(
-    agentId,
-    vendor,
-    vendorConfig,
-    promptFlag,
-    promptContent,
-    undefined,
-    { readOnly: readOnly ?? false, workspace: resolvedWorkspace },
-  );
+  let dispatch: ReturnType<typeof planDispatch>;
+  try {
+    dispatch = planDispatch(
+      agentId,
+      vendor,
+      vendorConfig,
+      promptFlag,
+      promptContent,
+      undefined,
+      { readOnly: readOnly ?? false, workspace: resolvedWorkspace },
+    );
+  } catch (error) {
+    finishAgentRun(runRoot, run.runId, null);
+    throw error;
+  }
+  const logStream = fs.openSync(logFile, "w");
+  // Keep the historical combined log unless failover is explicitly requested.
+  // For failover, stderr is the only terminal-error input so task stdout cannot
+  // forge a quota/rate-limit signal.
+  const stderrStream = hasFailover ? fs.openSync(stderrFile, "w") : logStream;
+
   console.log(
     color.dim(
       `  Dispatch: ${dispatch.mode} (${dispatch.runtimeVendor} -> ${dispatch.targetVendor}, ${dispatch.reason})`,
