@@ -1,5 +1,12 @@
 # Changelog
 
+## [14.6.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.5.0...cli-v14.6.0) (2026-09-08)
+
+
+### Features
+
+* **cli:** add free provider routing and local config overrides ([7ae1ad1](https://github.com/first-fluke/oh-my-agent/commit/7ae1ad1c84882a83710b70d12b2b94a4d51caf78))
+
 ## [14.5.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v14.4.0...cli-v14.5.0) (2026-09-08)
 
 
