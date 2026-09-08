@@ -8,6 +8,7 @@ type RegisteredCommand = Command & { _actionHandler?: unknown };
 let program: Command;
 
 // Capture the actual CLI registration without running an install or command.
+// Loading every command can exceed the default hook timeout under parallel tests.
 beforeAll(async () => {
   const argv = process.argv;
   const parse = vi
@@ -23,7 +24,7 @@ beforeAll(async () => {
     process.argv = argv;
     parse.mockRestore();
   }
-});
+}, 30_000);
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -41,6 +42,29 @@ function registeredCommands() {
 }
 
 describe("actual CLI command surface dispatch", () => {
+  it("exposes profile management and explicit global session discovery", () => {
+    const paths = registeredCommands().map(({ path }) => path);
+    for (const path of [
+      "profile list",
+      "profile create",
+      "profile show",
+      "profile use",
+      "profile run",
+    ]) {
+      expect(paths).toContain(path);
+    }
+    const state = program.commands.find(
+      (command) => command.name() === "state",
+    );
+    expect(
+      state?.options.some((option) => option.long === "--all-projects"),
+    ).toBe(true);
+    const surface = createCommandSurface(program);
+    expect(
+      surface.normalize(["state", "list", "--all-projects", "--json"]),
+    ).toEqual(["state", "--all-projects", "--json"]);
+  });
+
   it("never swallows an executable command as implicit group help", () => {
     const surface = createCommandSurface(program);
     const help = vi.spyOn(Command.prototype, "outputHelp").mockReturnThis();

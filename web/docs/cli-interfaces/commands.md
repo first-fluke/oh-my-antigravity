@@ -372,6 +372,51 @@ oma retro 7d --json
 
 ---
 
+## Sessions and local profiles
+
+### state list
+
+List the current project's OMA workflow sessions. Explicit global discovery
+lists sessions across projects within the selected local profile:
+
+```bash
+oma state list
+oma state list --all-projects --json
+oma state list --all-projects --project /path/to/project
+oma state list --all-projects --search migration
+```
+
+`--all-projects` is read-only. It cannot be combined with session activation or
+maintenance. Normal session reads and writes retain their project scope.
+Other repositories' legacy sessions must first migrate to home storage before
+they appear in the aggregate listing.
+
+### profile
+
+Manage the local storage profiles under `~/.oma/u/<slot>/`. Slots are
+non-negative decimal integers; they are separate from model presets and
+provider login accounts.
+
+```bash
+oma profile list --json
+oma profile create 1
+oma profile show
+eval "$(oma profile use 1 --shell zsh)"
+oma profile show
+oma profile run 1 -- oma state list --all-projects --json
+```
+
+`profile use` prints shell activation; evaluating it sets `OMA_PROFILE` in the
+current shell. It does not modify the parent shell when run on its own, change
+already-running applications, or save a separate CLI-only default. CLI commands
+and vendor hooks started from the activated shell inherit the same profile.
+The default is profile `0`; `OMA_STATE_HOME` overrides the storage root.
+`profile run <slot> -- <command> [args...]` selects the profile for only that
+command and its children. The separator keeps child options such as `--help`
+and `--json` attached to the child command.
+
+---
+
 ## Agent management
 
 ### agent spawn

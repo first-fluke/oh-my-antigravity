@@ -31,6 +31,7 @@ import {
 import {
   renderArchivedStateList,
   renderArchiveResult,
+  renderGlobalStateList,
   renderInjectLogView,
   renderPurgeResult,
   renderRepairResult,
@@ -40,6 +41,7 @@ import {
 import {
   activateStateSession,
   collectArchivedState,
+  collectGlobalState,
   collectState,
   isValidSid,
   parseOlderThan,
@@ -214,6 +216,15 @@ export function registerState(program: Command): void {
       .option("--category <category>", "Active category", "main")
       .option("--archive", "Move inactive terminal sessions to state archive")
       .option("--archived", "List archived sessions")
+      .option(
+        "--all-projects",
+        "List sessions from every project in the selected profile",
+      )
+      .option(
+        "--project <project>",
+        "Filter --all-projects by project ID or path",
+      )
+      .option("--search <text>", "Search --all-projects session metadata")
       .option("--purge", "Delete inactive sessions older than --older-than")
       .option("--older-than <duration>", "Purge age threshold", "90d")
       .option("--dry-run", "Preview purge without deleting sessions"),
@@ -226,6 +237,25 @@ export function registerState(program: Command): void {
         const archive = options.archive === true;
         const archived = options.archived === true;
         const purge = options.purge === true;
+        const allProjects = options.allProjects === true;
+
+        if ((options.project || options.search) && !allProjects) {
+          throw new Error("--project and --search require --all-projects");
+        }
+        if (allProjects) {
+          if (sid || activate || archive || archived || purge) {
+            throw new Error(
+              "--all-projects is read-only and only supports --project and --search",
+            );
+          }
+          const state = collectGlobalState({
+            project: options.project as string | undefined,
+            search: options.search as string | undefined,
+          });
+          if (jsonMode) console.log(JSON.stringify(state, null, 2));
+          else console.log(renderGlobalStateList(state));
+          return;
+        }
 
         if (sid === "repair") {
           const result = repairStateSessions({

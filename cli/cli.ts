@@ -94,6 +94,7 @@ async function registerFullCli(): Promise<void> {
     import("./commands/hook/command.js").then((m) => m.registerHook),
     import("./commands/state/emit.js").then((m) => m.registerEmit),
     import("./commands/state/command.js").then((m) => m.registerState),
+    import("./commands/profile/command.js").then((m) => m.registerProfile),
     import("./commands/ralph/command.js").then((m) => m.registerRalph),
     import("./commands/goal/command.js").then((m) => m.registerGoal),
     import("./commands/stats/command.js").then((m) => m.registerStats),

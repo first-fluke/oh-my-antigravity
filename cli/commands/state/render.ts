@@ -8,6 +8,7 @@ import {
 import type {
   ArchivedStateView,
   ArchiveResult,
+  GlobalStateView,
   InjectLogView,
   PurgeResult,
   RepairResult,
@@ -52,6 +53,27 @@ export function renderStateList(view: StateView): string {
       ? ` ${pc.dim(session.currentPhase)}`
       : "";
     lines.push(`  ${session.sid} ${workflow} ${session.status}${phase}`);
+  }
+  return lines.join("\n");
+}
+
+export function renderGlobalStateList(view: GlobalStateView): string {
+  const lines = [
+    pc.bold(`OMA profile ${view.profile} sessions across projects`),
+    "",
+  ];
+  if (view.sessions.length === 0) {
+    lines.push("  (none)");
+    return lines.join("\n");
+  }
+  for (const session of view.sessions) {
+    const workflow = session.meta.workflow || "(unknown)";
+    const phase = session.meta.currentPhase
+      ? ` ${pc.dim(session.meta.currentPhase)}`
+      : "";
+    lines.push(
+      `  ${session.sid} ${workflow} ${session.meta.status}${phase} ${pc.dim(session.context.projectDir)}`,
+    );
   }
   return lines.join("\n");
 }

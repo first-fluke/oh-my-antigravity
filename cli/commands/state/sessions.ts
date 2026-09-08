@@ -1,5 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
+import {
+  profileSlot,
+  projectIdentity,
+  type SessionContext,
+} from "../../../.agents/hooks/core/session-storage.js";
 import {
   deriveMeta,
   isValidSid,
@@ -12,6 +17,7 @@ import {
   sessionArchiveRoot,
   sessionArchiveRoots,
   sessionDir,
+  sessionsDir,
   setActiveSession,
   sortEvents,
 } from "../../state/events.js";
@@ -19,6 +25,7 @@ import { resolveProjectRoot } from "../../utils/fs-utils.js";
 import type {
   ArchivedSession,
   ArchivedStateView,
+  GlobalStateView,
   SessionView,
   StateView,
 } from "./types.js";
@@ -90,6 +97,34 @@ export function collectState(projectDir = resolveProjectRoot()): StateView {
   return { index, sessions };
 }
 
+/** Read every valid session in the selected profile without creating storage. */
+export function collectGlobalState(
+  filters: { project?: string; search?: string } = {},
+): GlobalStateView {
+  const profile = profileSlot();
+  const root = sessionsDir();
+  if (!existsSync(root)) return { profile, sessions: [] };
+  const sessions = [] as GlobalStateView["sessions"];
+  let entries: string[];
+  try {
+    entries = readdirSync(root);
+  } catch {
+    return { profile, sessions };
+  }
+  for (const sid of entries) {
+    if (!isValidSid(sid)) continue;
+    const context = readGlobalContext(join(root, sid));
+    if (!context || context.profile !== profile) continue;
+    const meta = deriveMeta(sid, eventsFromDir(join(root, sid)));
+    if (!matchesGlobalFilters({ sid, context, meta }, filters)) continue;
+    sessions.push({ sid, context, meta });
+  }
+  sessions.sort((a, b) =>
+    (b.meta.createdAt ?? "").localeCompare(a.meta.createdAt ?? ""),
+  );
+  return { profile, sessions };
+}
+
 export function collectArchivedState(
   projectDir = resolveProjectRoot(),
 ): ArchivedStateView {
@@ -146,6 +181,61 @@ export function viewSession(
 
   const events = readEvents(projectDir, sid);
   return { meta: deriveMeta(sid, events), events, archived: false };
+}
+
+function readGlobalContext(dir: string): SessionContext | null {
+  try {
+    const value = JSON.parse(
+      readFileSync(join(dir, "context.json"), "utf-8"),
+    ) as unknown;
+    if (!value || typeof value !== "object") return null;
+    const context = value as Partial<SessionContext>;
+    if (
+      context.schemaVersion !== 1 ||
+      typeof context.projectId !== "string" ||
+      context.projectId.length === 0 ||
+      typeof context.projectDir !== "string" ||
+      !isAbsolute(context.projectDir) ||
+      typeof context.profile !== "string"
+    ) {
+      return null;
+    }
+    const identity = projectIdentity(context.projectDir);
+    if (
+      context.projectId !== identity.projectId ||
+      context.profile !== identity.profile
+    ) {
+      return null;
+    }
+    return identity;
+  } catch {
+    return null;
+  }
+}
+
+function matchesGlobalFilters(
+  session: GlobalStateView["sessions"][number],
+  filters: { project?: string; search?: string },
+): boolean {
+  if (filters.project) {
+    const projectPath = projectIdentity(filters.project).projectDir;
+    if (
+      session.context.projectId !== filters.project &&
+      session.context.projectDir !== projectPath
+    ) {
+      return false;
+    }
+  }
+  const search = filters.search?.trim().toLowerCase();
+  if (!search) return true;
+  return [
+    session.sid,
+    session.context.projectId,
+    session.context.projectDir,
+    session.meta.workflow,
+    session.meta.status,
+    session.meta.currentPhase,
+  ].some((value) => value?.toLowerCase().includes(search));
 }
 
 export function activateStateSession(

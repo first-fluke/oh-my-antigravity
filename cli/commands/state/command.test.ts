@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerState } from "./command.js";
 import { registerEmit } from "./emit.js";
 
@@ -11,7 +11,32 @@ function buildProgram(): Command {
   return program;
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+  process.exitCode = undefined;
+});
+
 describe("state command registration", () => {
+  it("rejects aggregate mode with mutations and requires it for aggregate filters", async () => {
+    const cases = [
+      ["state", "--all-projects", "--activate", "oma-a"],
+      ["state", "--all-projects", "--archive"],
+      ["state", "--all-projects", "--purge"],
+      ["state", "--project", "/tmp/project"],
+      ["state", "--search", "migration"],
+    ];
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    for (const args of cases) {
+      const program = buildProgram();
+      await program.parseAsync(["node", "oma", ...args]);
+      expect(process.exitCode).toBe(1);
+      process.exitCode = undefined;
+    }
+    expect(error).toHaveBeenCalledTimes(cases.length);
+  });
+
   it("registers state:repair with dry-run support", () => {
     const program = buildProgram();
     const command = program.commands.find(

@@ -32,8 +32,8 @@ The first state write creates `profile.json` with a persistent random
 `account: null`. Repeated writes preserve this identity. A future login flow
 can link an account using `account: { issuer, subject }`, where `subject` is
 the stable server account ID. Email changes do not require moving sessions.
-This change adds the storage contract; it does not implement login, account
-switching UI, credential storage, or synchronization.
+The storage contract and local profile CLI do not implement provider login,
+credential storage, or synchronization.
 
 The process selects a profile through `OMA_PROFILE` (default `0`). Profile
 slots are non-negative decimal integers. For example:
@@ -41,6 +41,26 @@ slots are non-negative decimal integers. For example:
 ```bash
 OMA_PROFILE=1 oma state
 ```
+
+Manage local profile slots with `oma profile list`, `oma profile create 1`,
+and `oma profile show`. Listing and inspection do not create a profile.
+To select an existing profile in the current Bash or Zsh shell, evaluate the
+activation command:
+
+```bash
+eval "$(oma profile use 1 --shell zsh)"
+oma profile show
+```
+
+Profile selection uses `OMA_PROFILE`, so commands and vendor hooks launched
+from that shell agree. Running `oma profile use 1` by itself prints activation
+guidance; it cannot change its parent shell. Already-running applications keep
+their existing environment. No CLI-only default is persisted.
+
+To select a profile for one process and its children, use
+`oma profile run 1 -- oma state list`. Arguments after `--` belong to the
+child command, including its help and output-format flags. The parent shell's
+profile remains unchanged.
 
 `OMA_STATE_HOME` overrides the absolute storage root (the directory that
 contains `u/`). It is separate from `OMA_HOME`, which already controls OMA
@@ -59,6 +79,13 @@ Active pointers and index locks are scoped to both profile and project.
 project's sessions in the selected profile. The archive is also stored in
 the home directory. A direct read or write of another project's session ID
 is rejected.
+
+Use `oma state list --all-projects` to explicitly list home sessions across
+projects in the selected profile. Add `--project <id-or-path>` or
+`--search <text>` to narrow the aggregate list, and `--json` for structured
+output. This is read-only discovery: it does not relax project-scoped writes,
+activation, archive, purge, or repair. Legacy sessions in other repositories
+remain discoverable from those repositories until migrated to home storage.
 
 New home sessions survive repository deletion and can be inspected through
 the storage APIs with their original canonical project path. Moving a project

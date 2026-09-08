@@ -1,8 +1,20 @@
+import type { SessionContext } from "../../../.agents/hooks/core/session-storage.js";
 import type { readEvents, readIndex, SessionMeta } from "../../state/events.js";
 
 export interface StateView {
   index: ReturnType<typeof readIndex>;
   sessions: SessionMeta[];
+}
+
+export interface GlobalSession {
+  sid: string;
+  context: SessionContext;
+  meta: SessionMeta;
+}
+
+export interface GlobalStateView {
+  profile: string;
+  sessions: GlobalSession[];
 }
 
 export interface ArchivedSession {
