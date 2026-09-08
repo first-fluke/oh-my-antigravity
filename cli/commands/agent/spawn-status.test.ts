@@ -1,6 +1,8 @@
 import * as child_process from "node:child_process";
 import type * as fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as agentConfig from "../../platform/agent-config.js";
+import * as events from "../../state/events.js";
 import { spawnAgent } from "./spawn-status.js";
 
 // Dispatch tests isolate the evidence store; real filesystem behavior is covered
@@ -37,6 +39,7 @@ const mockFsFunctions = vi.hoisted(() => ({
   openSync: vi.fn(),
   closeSync: vi.fn(),
   statSync: vi.fn(),
+  lstatSync: vi.fn(),
   mkdirSync: vi.fn(),
   readdirSync: vi.fn(),
 }));
@@ -160,6 +163,8 @@ describe("agent/spawn-status.ts", () => {
       expect.stringContaining(".pid"),
       "12345",
     );
+    const spawnOptions = vi.mocked(child_process.spawn).mock.calls[0]?.[2];
+    expect(spawnOptions?.stdio?.[1]).toBe(spawnOptions?.stdio?.[2]);
   });
 
   it("resolves vendor from oma-config.yaml found in parent directory", async () => {
@@ -536,6 +541,109 @@ describe("agent/spawn-status.ts", () => {
     expect(unlinked.some((p) => p.endsWith(".pid"))).toBe(true);
     expect(unlinked.some((p) => p.endsWith(".log"))).toBe(false);
 
+    expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
+  it("hands a checkpointed external rate-limit failure to the next configured vendor", async () => {
+    const exitHandlers: Array<(code: number | null) => void> = [];
+    const firstChild = {
+      pid: 101,
+      on: vi.fn((event: string, handler: (code: number | null) => void) => {
+        if (event === "exit") exitHandlers.push(handler);
+      }),
+      unref: vi.fn(),
+    };
+    const secondChild = {
+      pid: 102,
+      on: vi.fn((event: string, handler: (code: number | null) => void) => {
+        if (event === "exit") exitHandlers.push(handler);
+      }),
+      unref: vi.fn(),
+    };
+    vi.mocked(child_process.spawn)
+      .mockReturnValueOnce(firstChild as unknown as child_process.ChildProcess)
+      .mockReturnValueOnce(
+        secondChild as unknown as child_process.ChildProcess,
+      );
+    vi.spyOn(agentConfig, "resolveVendor").mockImplementation(
+      (_agent, override) => ({
+        vendor: override ?? "claude",
+        config: { vendors: { codex: {} } },
+      }),
+    );
+    mockFsFunctions.existsSync.mockImplementation((value: fs.PathLike) => {
+      const candidate = String(value);
+      return (
+        candidate.includes(".stderr.log") ||
+        candidate.endsWith("failover-handoff-test-run.md")
+      );
+    });
+    mockFsFunctions.readFileSync.mockImplementation((value: fs.PathLike) => {
+      const candidate = String(value);
+      if (candidate.includes(".stderr.log"))
+        return "Error: HTTP 429 rate limited\n";
+      if (candidate.includes("failover-handoff-test-run.md")) {
+        return [
+          "FAILOVER_HANDOFF: safe-to-resume",
+          "Run: test-run",
+          "Session: session1",
+          "Agent: agent1",
+          "Vendor: claude",
+        ].join("\n");
+      }
+      return "";
+    });
+    mockFsFunctions.lstatSync.mockImplementation(
+      () =>
+        ({
+          mtimeMs: Date.now() + 10_000,
+          size: 100,
+          isSymbolicLink: () => false,
+        }) as fs.Stats,
+    );
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((): never => {
+      throw new Error("exit");
+    });
+
+    await spawnAgent(
+      "agent1",
+      "do the task",
+      "session1",
+      "/tmp",
+      undefined,
+      undefined,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      "codex",
+    );
+    expect(exitHandlers).toHaveLength(1);
+    exitHandlers[0]?.(1);
+    expect(child_process.spawn).toHaveBeenCalledTimes(2);
+    expect(child_process.spawn).toHaveBeenLastCalledWith(
+      "codex",
+      expect.any(Array),
+      expect.any(Object),
+    );
+    expect(events.emitEvent).toHaveBeenCalledWith(
+      expect.any(String),
+      "session1",
+      expect.objectContaining({
+        kind: "decision.made",
+        payload: expect.objectContaining({ code: "failover.transition" }),
+      }),
+    );
+    expect(events.emitEvent).not.toHaveBeenCalledWith(
+      expect.any(String),
+      "session1",
+      expect.objectContaining({
+        kind: "blocker.raised",
+        payload: expect.objectContaining({ code: "spawn.incomplete-result" }),
+      }),
+    );
+    expect(exitHandlers).toHaveLength(2);
+    expect(() => exitHandlers[1]?.(0)).toThrow("exit");
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 

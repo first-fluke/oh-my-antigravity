@@ -63,6 +63,12 @@ describe("actual CLI command surface dispatch", () => {
     expect(
       surface.normalize(["state", "list", "--all-projects", "--json"]),
     ).toEqual(["state", "--all-projects", "--json"]);
+    const spawn = registeredCommands().find(
+      ({ path }) => path === "agent spawn",
+    )?.command;
+    expect(
+      spawn?.options.some((option) => option.long === "--fallback-vendors"),
+    ).toBe(true);
   });
 
   it("never swallows an executable command as implicit group help", () => {

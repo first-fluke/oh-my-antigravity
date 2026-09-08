@@ -63,6 +63,10 @@ export function registerAgentCommands(program: Command): void {
     .description("Spawn a subagent (prompt can be inline text or a file path)")
     .option("--resumed-from <run-id>", "Link a retry to its preceding run")
     .option(
+      "--fallback-vendors <vendors>",
+      "Ordered, comma-separated explicit fallback vendor chain",
+    )
+    .option(
       "--task-id <id>",
       "Task ID from the session plan (default: agent ID)",
     )
@@ -95,6 +99,7 @@ export function registerAgentCommands(program: Command): void {
           options.readOnly,
           options.taskId,
           options.resumedFrom,
+          options.fallbackVendors,
         );
       }),
     );

@@ -443,6 +443,7 @@ oma agent spawn <agent-id> <prompt> <session-id> [-m <vendor>] [-w <workspace>] 
 | `-w, --workspace <path>` | Working directory for the agent. Auto-detected from monorepo config if omitted. |
 | `--isolation <mode>` | Per-spawn isolation mode. Currently supports `worktree`: creates a fresh git worktree at `${tmpdir}/oma-worktrees/{sessionId}/{agentId}` on branch `oma/{sessionId}/{agentId}` and runs the agent there. The worktree is retained after exit; merge or discard commands are printed for manual review (no auto-merge). |
 | `--read-only` | Restrict the spawned agent to non-destructive tools (suppresses auto-approve flags). Used internally by `oma skill eval --live` for both eval arms. |
+| `--fallback-vendors <vendors>` | Opt in to an ordered, comma-separated chain of up to three configured CLI vendors. Continuation requires a recognized quota/rate-limit/transient failure and a fresh safe-handoff checkpoint. |
 
 **Vendor resolution order:** `--vendor` flag > `agents:` override in `oma-config.yaml` > active `model_preset` agent defaults.
 
@@ -467,6 +468,9 @@ oma agent spawn frontend ./prompts/dashboard.md session-20260324-143000 -w ./app
 # Override vendor to Claude
 oma agent spawn backend "Implement auth" session-20260324-143000 --vendor claude -w ./api
 
+# Allow a prepared task handoff to another configured vendor
+oma agent spawn backend "Implement auth" session-20260324-143000 --vendor claude --fallback-vendors codex,qwen -w ./api
+
 # Mobile agent with auto-detected workspace
 oma agent spawn mobile "Add biometric login" session-20260324-143000
 
@@ -474,6 +478,25 @@ oma agent spawn mobile "Add biometric login" session-20260324-143000
 # when parallel agents would touch shared files)
 oma agent spawn backend "Try a Drizzle-based rewrite" session-20260324-143000 --isolation worktree
 ```
+
+**Vendor failover:** fallback candidates must have a vendor entry in the
+installed CLI configuration. Each attempt uses its target vendor's model
+configuration and passes through the existing session quota checks. The `pi`
+multi-provider proxy is excluded from this initial vendor fallback feature.
+No additional provider credentials or paid API route are created.
+
+When failover is enabled, the task receives instructions to prepare a
+run-specific safe-handoff record under `.agents/results/`. A successor reads
+that record and checks the workspace before continuing the remaining work.
+Quota exhaustion without a usable checkpoint stops with a needs-review
+record. Cancellation, ordinary task failures, and completed runs do not start
+another attempt. `--read-only` does not waive the checkpoint requirement.
+
+Session events record the transition reason and source/target vendors; each
+attempt has its own run identity and the successor links to its predecessor.
+This applies to subprocesses launched by `oma agent spawn`; it does not
+automatically switch an existing interactive conversation in a vendor app.
+Omitting `--fallback-vendors` preserves the usual single-vendor execution.
 
 ### agent status
 

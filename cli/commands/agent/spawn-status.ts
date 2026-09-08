@@ -8,6 +8,7 @@ import {
   getCoordinationStorePath,
   resolveCoordinationFile,
 } from "../../io/memory.js";
+import { detectRuntimeVendor } from "../../io/runtime-dispatch/detect.js";
 import {
   createOpencodeSpawnWrapper,
   type OpencodeWrapper,
@@ -55,6 +56,13 @@ import { emitEvent } from "../../state/events.js";
 import { resolveProjectRoot } from "../../utils/fs-utils.js";
 import { registerSignalCleanup } from "../../utils/process-signals.js";
 import { isProcessRunning } from "./common.js";
+import {
+  buildFailoverPrompt,
+  classifyFailoverTerminal,
+  failoverCheckpointInstructions,
+  findSafeFailoverHandoff,
+  resolveFailoverCandidates,
+} from "./failover.js";
 
 // ---------------------------------------------------------------------------
 // T12 + T16: Difficulty classification hints
@@ -193,6 +201,9 @@ export async function spawnAgent(
   readOnly?: boolean,
   taskId?: string,
   resumedFrom?: string,
+  fallbackVendors?: string | string[],
+  failoverAttempt = 0,
+  originalTaskPrompt?: string,
 ) {
   let worktreeHandle: WorktreeHandle | null = null;
   if (isolation === "worktree") {
@@ -226,7 +237,16 @@ export async function spawnAgent(
     );
   }
 
-  const logFile = path.join(tmpdir(), `subagent-${sessionId}-${agentId}.log`);
+  const attemptSuffix =
+    failoverAttempt === 0 ? "" : `-failover-${failoverAttempt}`;
+  const logFile = path.join(
+    tmpdir(),
+    `subagent-${sessionId}-${agentId}${attemptSuffix}.log`,
+  );
+  const stderrFile = path.join(
+    tmpdir(),
+    `subagent-${sessionId}-${agentId}${attemptSuffix}.stderr.log`,
+  );
   const pidFile = path.join(tmpdir(), `subagent-${sessionId}-${agentId}.pid`);
   // Session-specific terminal status. Persisted on child exit (#583) so
   // `agent:status` can distinguish a successful short-lived run that wrote no
@@ -241,6 +261,7 @@ export async function spawnAgent(
   ensureSessionCoordinationDir(process.cwd());
 
   const rawPromptContent = resolvePromptContent(prompt);
+  const initialTaskPrompt = originalTaskPrompt ?? rawPromptContent;
 
   // T12: Classify difficulty from the task description + optional hints.
   // The resulting difficulty value can be forwarded to buildMarkdownAgentFile
@@ -277,7 +298,18 @@ export async function spawnAgent(
   }
 
   const { vendor, config } = resolveVendor(agentId, vendorOverride);
+  const fallbackCandidates = resolveFailoverCandidates(
+    fallbackVendors,
+    vendor,
+    config,
+    detectRuntimeVendor(),
+  );
+  const hasFailover = fallbackCandidates.vendors.length > 0;
+  for (const rejected of fallbackCandidates.rejected) {
+    console.warn(color.yellow(`[${agentId}] Failover ignored: ${rejected}`));
+  }
   const runRoot = resolveProjectRoot(resolvedWorkspace);
+  const attemptStartedAtMs = Date.now();
   const run = beginAgentRun({
     root: runRoot,
     workspace: resolvedWorkspace,
@@ -296,6 +328,15 @@ export async function spawnAgent(
 
   const resultInstructions = agentResultInstructions(runRoot, run, readOnly);
   if (resultInstructions) promptContent += `\n\n${resultInstructions}`;
+  if (hasFailover && !readOnly) {
+    promptContent += `\n\n${failoverCheckpointInstructions({
+      root: runRoot,
+      runId: run.runId,
+      sessionId,
+      agentId,
+      vendor,
+    })}`;
+  }
   const taskContext = loadGraphContext(agentId, difficulty, runRoot);
   if (taskContext) promptContent += `\n\n${taskContext}`;
 
@@ -311,11 +352,16 @@ export async function spawnAgent(
 
   const vendorConfig = config?.vendors?.[vendor] || {};
   const logStream = fs.openSync(logFile, "w");
+  // Keep the historical combined log unless failover is explicitly requested.
+  // For failover, stderr is the only terminal-error input so task stdout cannot
+  // forge a quota/rate-limit signal.
+  const stderrStream = hasFailover ? fs.openSync(stderrFile, "w") : logStream;
 
   console.log(color.blue(`[${agentId}] Spawning subagent...`));
   console.log(color.dim(`  Vendor: ${vendor}`));
   console.log(color.dim(`  Workspace: ${resolvedWorkspace}`));
   console.log(color.dim(`  Log: ${logFile}`));
+  if (hasFailover) console.log(color.dim(`  Failover errors: ${stderrFile}`));
 
   const promptFlag = resolvePromptFlag(vendor, vendorConfig.prompt_flag);
   if (readOnly) {
@@ -391,7 +437,7 @@ export async function spawnAgent(
 
   const child = spawnProcess(command, args, {
     cwd: resolvedWorkspace,
-    stdio: ["ignore", logStream, logStream],
+    stdio: ["ignore", logStream, stderrStream],
     detached: false,
     env,
   });
@@ -399,6 +445,7 @@ export async function spawnAgent(
   if (!child.pid) {
     finishAgentRun(runRoot, run.runId, null);
     fs.closeSync(logStream);
+    if (stderrStream !== logStream) fs.closeSync(stderrStream);
     if (worktreeHandle) {
       console.log(
         color.yellow(`[${agentId}] Worktree retained: ${worktreeHandle.path}`),
@@ -423,6 +470,7 @@ export async function spawnAgent(
   // Also drop the temporary OpenCode wrapper agent, if one was created.
   const cleanup = () => {
     fs.closeSync(logStream);
+    if (stderrStream !== logStream) fs.closeSync(stderrStream);
     try {
       if (fs.existsSync(pidFile)) fs.unlinkSync(pidFile);
     } catch {
@@ -458,7 +506,40 @@ export async function spawnAgent(
           : undefined;
       const result = finishAgentRun(runRoot, run.runId, code, claim);
       fs.writeFileSync(statusFile, `${result.status}\n`);
-      if (result.status !== "completed") {
+
+      if (code !== 0 && fs.existsSync(logFile)) {
+        const log = fs.readFileSync(logFile, "utf-8").trim();
+        if (log) {
+          console.log(color.red(`[${agentId}] Log output:`));
+          console.log(log);
+        }
+      }
+
+      const terminalReason =
+        hasFailover && fs.existsSync(stderrFile)
+          ? classifyFailoverTerminal(code, fs.readFileSync(stderrFile, "utf8"))
+          : null;
+      const safeHandoff = terminalReason
+        ? findSafeFailoverHandoff({
+            root: runRoot,
+            runId: run.runId,
+            sessionId,
+            agentId,
+            vendor,
+            startedAtMs: attemptStartedAtMs,
+          })
+        : null;
+      const nextVendor = fallbackCandidates.vendors[0];
+      const willFailover =
+        terminalReason &&
+        safeHandoff &&
+        nextVendor &&
+        result.status !== "completed";
+
+      // A safe successor owns the continuation. Do not leave the session
+      // blocked for that expected handoff; a transition is recorded below as a
+      // decision. All other incomplete results keep the existing blocker.
+      if (result.status !== "completed" && !willFailover) {
         emitEvent(runRoot, sessionId, {
           kind: "blocker.raised",
           vendor,
@@ -470,14 +551,6 @@ export async function spawnAgent(
             unresolved: result.unresolved,
           },
         });
-      }
-
-      if (code !== 0 && fs.existsSync(logFile)) {
-        const log = fs.readFileSync(logFile, "utf-8").trim();
-        if (log) {
-          console.log(color.red(`[${agentId}] Log output:`));
-          console.log(log);
-        }
       }
 
       // T15: Record usage after subprocess exits.
@@ -502,6 +575,78 @@ export async function spawnAgent(
         for (const line of formatWorktreeSummary(worktreeHandle).split("\n")) {
           console.log(color.dim(`  ${line}`));
         }
+      }
+
+      if (willFailover && nextVendor && safeHandoff && terminalReason) {
+        emitEvent(runRoot, sessionId, {
+          kind: "decision.made",
+          vendor,
+          payload: {
+            code: "failover.transition",
+            agentId,
+            runId: run.runId,
+            fromVendor: vendor,
+            toVendor: nextVendor,
+            reason: terminalReason,
+            handoffPath: safeHandoff.path,
+          },
+        });
+        console.log(
+          color.yellow(
+            `[${agentId}] Failover: ${vendor} -> ${nextVendor} (${terminalReason})`,
+          ),
+        );
+        cleanup();
+        void spawnAgent(
+          agentId,
+          buildFailoverPrompt({
+            originalPrompt: initialTaskPrompt,
+            handoff: safeHandoff,
+            reason: terminalReason,
+          }),
+          sessionId,
+          resolvedWorkspace,
+          nextVendor,
+          taskHints,
+          undefined,
+          readOnly,
+          taskId,
+          run.runId,
+          fallbackCandidates.vendors.slice(1),
+          failoverAttempt + 1,
+          initialTaskPrompt,
+        ).catch((error) => {
+          console.error(
+            color.red(
+              `[${agentId}] Failover could not start: ${String(error)}`,
+            ),
+          );
+          process.exit(3);
+        });
+        return;
+      }
+
+      if (terminalReason && nextVendor && result.status !== "completed") {
+        emitEvent(runRoot, sessionId, {
+          kind: "blocker.raised",
+          vendor,
+          payload: {
+            code: "failover.needs-review",
+            agentId,
+            runId: run.runId,
+            fromVendor: vendor,
+            toVendor: nextVendor,
+            reason: terminalReason,
+            detail: safeHandoff
+              ? "handoff result was not eligible"
+              : "missing fresh safe handoff checkpoint",
+          },
+        });
+        console.warn(
+          color.yellow(
+            `[${agentId}] Eligible for failover but not automatically resumable: missing a fresh safe handoff checkpoint.`,
+          ),
+        );
       }
 
       cleanup();
