@@ -3,6 +3,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Vendor reconciliation must not inspect or update the developer's toolchain.
+vi.mock("../video/internal/remotion-workspace.js", () => ({
+  describeToolchain: vi.fn(() => ({ version: null })),
+  ensureLatestToolchain: vi.fn(),
+  ensureRemotionSkills: vi.fn(),
+}));
+
+vi.mock("../../utils/config.js", async (original) => ({
+  ...(await original<typeof import("../../utils/config.js")>()),
+  loadSerenaConfig: vi.fn(() => ({ autoUpdate: false })),
+}));
+
 let extractedRepoDir = "";
 let cleanupMock: ReturnType<typeof vi.fn>;
 let configuredVendorsForTest: string[] = [];

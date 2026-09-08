@@ -3,6 +3,13 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Version/reconciliation tests must not refresh the developer's real toolchain.
+vi.mock("../video/internal/remotion-workspace.js", () => ({
+  describeToolchain: vi.fn(() => ({ version: null })),
+  ensureLatestToolchain: vi.fn(),
+  ensureRemotionSkills: vi.fn(),
+}));
+
 // ---------------------------------------------------------------------------
 // Hoisted mock state
 // ---------------------------------------------------------------------------
