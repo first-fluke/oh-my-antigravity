@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.2.0](https://github.com/first-fluke/oh-my-agent/compare/web-v6.1.0...web-v6.2.0) (2026-09-08)
+
+
+### Features
+
+* **agent:** add checkpoint-gated vendor failover ([8a16eb3](https://github.com/first-fluke/oh-my-agent/commit/8a16eb384e70550691028603e00d7a7bce315988))
+* **state:** add global session discovery and profile commands ([8e48491](https://github.com/first-fluke/oh-my-agent/commit/8e484916fd0172513d61ccccfa7e718a01288792))
+
 ## [6.1.0](https://github.com/first-fluke/oh-my-agent/compare/web-v6.0.1...web-v6.1.0) (2026-09-06)
 
 
